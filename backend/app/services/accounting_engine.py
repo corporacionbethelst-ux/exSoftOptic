@@ -97,3 +97,25 @@ class AccountingEngine:
                 AccountingLineInput(cuenta_inventario, "Salida de inventario", haber=costo),
             ],
         )
+
+    async def handle_compra_recibida(
+        self,
+        *,
+        empresa_id: UUID,
+        fecha: date,
+        referencia: str,
+        total: Decimal,
+        cuenta_inventario: str = "115.01",
+        cuenta_cxp: str = "201.01",
+    ) -> AsientoContable:
+        return await self.create_journal_entry(
+            empresa_id=empresa_id,
+            fecha=fecha,
+            descripcion=f"Recepción de compra {referencia}",
+            origen="COMPRA_RECIBIDA",
+            referencia=referencia,
+            lines=[
+                AccountingLineInput(cuenta_inventario, "Entrada de inventario", debe=total),
+                AccountingLineInput(cuenta_cxp, "Cuenta por pagar proveedor", haber=total),
+            ],
+        )

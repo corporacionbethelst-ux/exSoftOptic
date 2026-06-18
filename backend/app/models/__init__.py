@@ -1,4 +1,5 @@
 from app.models.base import BaseModel
+from app.models.compra import OrdenCompra, OrdenCompraLinea, Proveedor, RecepcionCompra, RecepcionCompraLinea
 from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable
 from app.models.empresa import Empresa
 from app.models.inventario import CapaInventario, InventarioExistencia, KardexMovimiento
@@ -12,4 +13,5 @@ __all__ = [
     "Producto", "Categoria", "Marca", "InventarioExistencia", "CapaInventario",
     "KardexMovimiento", "CuentaContable", "AsientoContable", "LineaAsientoContable",
     "Cliente", "Paciente", "RecetaOptica", "Venta", "VentaLinea", "PagoVenta",
+    "Proveedor", "OrdenCompra", "OrdenCompraLinea", "RecepcionCompra", "RecepcionCompraLinea",
 ]
