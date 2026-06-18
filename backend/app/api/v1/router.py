@@ -2,13 +2,16 @@
 from fastapi import APIRouter
 
 # Importar SOLO los módulos que ya existen
-from app.api.v1.endpoints import auth, usuarios
+from app.api.v1.endpoints import auth, contabilidad, inventario, productos, usuarios
 
 api_router = APIRouter()
 
 # Módulos implementados
 api_router.include_router(auth.router, prefix="/auth", tags=["Autenticación"])
 api_router.include_router(usuarios.router, prefix="/usuarios", tags=["Usuarios"])
+api_router.include_router(productos.router, prefix="/productos", tags=["Productos"])
+api_router.include_router(inventario.router, prefix="/inventario", tags=["Inventario"])
+api_router.include_router(contabilidad.router, prefix="/contabilidad", tags=["Contabilidad"])
 
 # Los siguientes se agregarán cuando se implementen en el Paso 4 y siguientes:
 # api_router.include_router(productos.router, prefix="/productos", tags=["Productos"])
