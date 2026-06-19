@@ -109,6 +109,11 @@ except ImportError:
     pass
 
 try:
+    from app.models import presupuesto
+except ImportError:
+    pass
+
+try:
     from app.models import activo_fijo
 except ImportError:
     pass
