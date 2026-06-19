@@ -119,3 +119,31 @@ class AccountingEngine:
                 AccountingLineInput(cuenta_cxp, "Cuenta por pagar proveedor", haber=total),
             ],
         )
+
+    async def handle_nomina_generada(
+        self,
+        *,
+        empresa_id: UUID,
+        fecha: date,
+        referencia: str,
+        total_percepciones: Decimal,
+        total_deducciones: Decimal,
+        total_neto: Decimal,
+        cuenta_gasto_sueldos: str = "601.01",
+        cuenta_bancos: str = "102.01",
+        cuenta_retenciones: str = "216.01",
+    ) -> AsientoContable:
+        lines = [
+            AccountingLineInput(cuenta_gasto_sueldos, "Gasto de nómina", debe=total_percepciones),
+            AccountingLineInput(cuenta_bancos, "Pago neto de nómina", haber=total_neto),
+        ]
+        if total_deducciones > 0:
+            lines.append(AccountingLineInput(cuenta_retenciones, "Retenciones de nómina", haber=total_deducciones))
+        return await self.create_journal_entry(
+            empresa_id=empresa_id,
+            fecha=fecha,
+            descripcion=f"Nómina generada {referencia}",
+            origen="NOMINA_GENERADA",
+            referencia=referencia,
+            lines=lines,
+        )

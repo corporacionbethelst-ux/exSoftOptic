@@ -6,6 +6,7 @@ from app.models.factura import Factura, FacturaEvento, FacturaLinea
 from app.models.garantia import EventoGarantia, Garantia, ReclamacionGarantia
 from app.models.inventario import CapaInventario, InventarioExistencia, KardexMovimiento
 from app.models.laboratorio import ControlCalidadLaboratorio, ConsumoMaterialLaboratorio, OrdenLaboratorio, OrdenLaboratorioEtapa
+from app.models.nomina import Empleado, NominaPeriodo, NominaRecibo
 from app.models.producto import Categoria, Marca, Producto
 from app.models.sucursal import Sucursal
 from app.models.usuario import Rol, Sesion, Usuario
@@ -20,4 +21,5 @@ __all__ = [
     "OrdenLaboratorio", "OrdenLaboratorioEtapa", "ConsumoMaterialLaboratorio", "ControlCalidadLaboratorio",
     "Garantia", "ReclamacionGarantia", "EventoGarantia",
     "Factura", "FacturaLinea", "FacturaEvento",
+    "Empleado", "NominaPeriodo", "NominaRecibo",
 ]
