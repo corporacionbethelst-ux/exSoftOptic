@@ -113,6 +113,8 @@ try:
 except ImportError:
     pass
 
+from app.models import outbox
+
 try:
     from app.models import activo_fijo
 except ImportError:
