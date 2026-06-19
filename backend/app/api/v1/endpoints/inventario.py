@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +8,8 @@ from app.api.deps import get_current_active_user, require_permissions, require_s
 from app.core.database import get_db
 from app.models.inventario import KardexMovimiento
 from app.models.usuario import Usuario
-from app.schemas.inventory_accounting import InventarioEntradaRequest, InventarioSalidaRequest, KardexResponse
+from app.schemas.inventory_accounting import InventarioAlertaResponse, InventarioEntradaRequest, InventarioSalidaRequest, KardexResponse
+from app.services.inventory_alert_service import InventoryAlertService
 from app.services.inventory_service import InventoryService
 from app.services.secured_audit import audit_user_action
 
@@ -49,3 +52,8 @@ async def kardex(producto_id: str | None = None, skip: int = Query(0, ge=0), lim
     if producto_id:
         query = query.where(KardexMovimiento.producto_id == producto_id)
     return (await db.execute(query)).scalars().all()
+
+
+@router.get("/alertas/stock-minimo", response_model=list[InventarioAlertaResponse], dependencies=[Depends(require_permissions(["inventario.alertas.leer"]))])
+async def alertas_stock_minimo(sucursal_id: UUID | None = None, db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await InventoryAlertService(db).alertas_stock_minimo(empresa_id=current_user.empresa_id, sucursal_id=sucursal_id)

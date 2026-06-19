@@ -104,3 +104,17 @@ class AsientoResponse(BaseModel):
     moneda: str
     estado: str
     lineas: list[LineaAsientoResponse] = []
+
+
+class InventarioAlertaResponse(BaseModel):
+    producto_id: UUID
+    sucursal_id: UUID
+    sku: str
+    nombre: str
+    tipo_alerta: str
+    severidad: str
+    cantidad_actual: Decimal
+    stock_minimo: Decimal
+    punto_reorden: Decimal | None = None
+    valor_total: Decimal
+    mensaje: str
