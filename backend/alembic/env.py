@@ -64,6 +64,21 @@ except ImportError:
     pass
 
 try:
+    from app.models import laboratorio
+except ImportError:
+    pass
+
+try:
+    from app.models import garantia
+except ImportError:
+    pass
+
+try:
+    from app.models import factura
+except ImportError:
+    pass
+
+try:
     from app.models import contabilidad
 except ImportError:
     pass
