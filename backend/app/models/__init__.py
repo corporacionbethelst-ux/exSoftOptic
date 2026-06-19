@@ -2,6 +2,7 @@ from app.models.base import BaseModel
 from app.models.compra import OrdenCompra, OrdenCompraLinea, Proveedor, RecepcionCompra, RecepcionCompraLinea
 from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable
 from app.models.empresa import Empresa
+from app.models.factura import Factura, FacturaEvento, FacturaLinea
 from app.models.garantia import EventoGarantia, Garantia, ReclamacionGarantia
 from app.models.inventario import CapaInventario, InventarioExistencia, KardexMovimiento
 from app.models.laboratorio import ControlCalidadLaboratorio, ConsumoMaterialLaboratorio, OrdenLaboratorio, OrdenLaboratorioEtapa
@@ -18,4 +19,5 @@ __all__ = [
     "Proveedor", "OrdenCompra", "OrdenCompraLinea", "RecepcionCompra", "RecepcionCompraLinea",
     "OrdenLaboratorio", "OrdenLaboratorioEtapa", "ConsumoMaterialLaboratorio", "ControlCalidadLaboratorio",
     "Garantia", "ReclamacionGarantia", "EventoGarantia",
+    "Factura", "FacturaLinea", "FacturaEvento",
 ]
