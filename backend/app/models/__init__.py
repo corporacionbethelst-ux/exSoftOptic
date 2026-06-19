@@ -1,4 +1,5 @@
 from app.models.base import BaseModel
+from app.models.auditoria import AuditoriaEvento
 from app.models.compra import OrdenCompra, OrdenCompraLinea, Proveedor, RecepcionCompra, RecepcionCompraLinea
 from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable
 from app.models.empresa import Empresa
@@ -22,4 +23,5 @@ __all__ = [
     "Garantia", "ReclamacionGarantia", "EventoGarantia",
     "Factura", "FacturaLinea", "FacturaEvento",
     "Empleado", "NominaPeriodo", "NominaRecibo",
+    "AuditoriaEvento",
 ]

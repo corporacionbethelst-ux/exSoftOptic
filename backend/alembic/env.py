@@ -94,6 +94,11 @@ except ImportError:
     pass
 
 try:
+    from app.models import auditoria
+except ImportError:
+    pass
+
+try:
     from app.models import activo_fijo
 except ImportError:
     pass
