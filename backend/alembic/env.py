@@ -69,6 +69,11 @@ except ImportError:
     pass
 
 try:
+    from app.models import garantia
+except ImportError:
+    pass
+
+try:
     from app.models import contabilidad
 except ImportError:
     pass
