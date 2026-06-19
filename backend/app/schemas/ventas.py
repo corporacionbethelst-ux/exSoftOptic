@@ -148,3 +148,47 @@ class VentaResponse(BaseModel):
     costo_total: Decimal
     lineas: list[VentaLineaResponse] = []
     pagos: list[PagoVentaResponse] = []
+
+
+class DevolucionVentaLineaCreate(BaseModel):
+    venta_linea_id: UUID
+    cantidad: Decimal = Field(..., gt=0)
+
+
+class DevolucionVentaCreate(BaseModel):
+    folio: str = Field(..., min_length=1, max_length=40)
+    motivo: str = Field(..., min_length=1, max_length=250)
+    lineas: list[DevolucionVentaLineaCreate] = Field(..., min_length=1)
+    cuenta_cobro: str = "102.01"
+    cuenta_ingresos: str = "401.01"
+    cuenta_costo_ventas: str = "501.01"
+    cuenta_inventario: str = "115.01"
+
+
+class DevolucionVentaLineaResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    venta_linea_id: UUID
+    producto_id: UUID
+    cantidad: Decimal
+    importe: Decimal
+    costo_total: Decimal
+
+
+class DevolucionVentaResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    empresa_id: UUID
+    sucursal_id: UUID
+    venta_id: UUID
+    asiento_id: UUID | None
+    folio: str
+    motivo: str
+    estado: str
+    subtotal: Decimal
+    impuestos: Decimal
+    total: Decimal
+    costo_total: Decimal
+    lineas: list[DevolucionVentaLineaResponse] = []

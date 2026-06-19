@@ -98,6 +98,33 @@ class AccountingEngine:
             ],
         )
 
+    async def handle_devolucion_venta(
+        self,
+        *,
+        empresa_id: UUID,
+        fecha: date,
+        referencia: str,
+        total: Decimal,
+        costo: Decimal,
+        cuenta_cobro: str = "102.01",
+        cuenta_ingresos: str = "401.01",
+        cuenta_costo_ventas: str = "501.01",
+        cuenta_inventario: str = "115.01",
+    ) -> AsientoContable:
+        return await self.create_journal_entry(
+            empresa_id=empresa_id,
+            fecha=fecha,
+            descripcion=f"Devolución de venta {referencia}",
+            origen="DEVOLUCION_VENTA",
+            referencia=referencia,
+            lines=[
+                AccountingLineInput(cuenta_ingresos, "Reverso de ingreso por devolución", debe=total),
+                AccountingLineInput(cuenta_cobro, "Reverso de cobro/CxC", haber=total),
+                AccountingLineInput(cuenta_inventario, "Entrada de inventario por devolución", debe=costo),
+                AccountingLineInput(cuenta_costo_ventas, "Reverso de costo de venta", haber=costo),
+            ],
+        )
+
     async def handle_compra_recibida(
         self,
         *,

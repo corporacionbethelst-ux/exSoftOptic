@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_active_user, require_permissions
 from app.core.database import get_db
 from app.models.usuario import Usuario
-from app.schemas.ventas import VentaConfirmarRequest, VentaCreate, VentaResponse
+from app.schemas.ventas import DevolucionVentaCreate, DevolucionVentaResponse, VentaConfirmarRequest, VentaCreate, VentaResponse
+from app.services.sales_return_service import SalesReturnService
 from app.services.sales_service import SalesService
 from app.services.secured_audit import audit_user_action
 
@@ -64,5 +65,31 @@ async def confirmar_venta(
         )
         await audit_user_action(db, current_user=current_user, accion="VENTA_CONFIRMAR", entidad="Venta", entidad_id=venta.id, payload={"folio": venta.folio, "total": str(venta.total)})
         return venta
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.post("/{venta_id}/devoluciones", response_model=DevolucionVentaResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["ventas.devolver"]))])
+async def registrar_devolucion_venta(
+    venta_id: UUID,
+    payload: DevolucionVentaCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    try:
+        devolucion = await SalesReturnService(db).registrar_devolucion(
+            empresa_id=current_user.empresa_id,
+            venta_id=venta_id,
+            payload=payload,
+        )
+        await audit_user_action(
+            db,
+            current_user=current_user,
+            accion="VENTA_DEVOLUCION_REGISTRAR",
+            entidad="DevolucionVenta",
+            entidad_id=devolucion.id,
+            payload={"folio": devolucion.folio, "total": str(devolucion.total)},
+        )
+        return devolucion
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc

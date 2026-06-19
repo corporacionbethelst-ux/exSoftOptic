@@ -12,13 +12,13 @@ from app.models.nomina import Empleado, NominaPeriodo, NominaRecibo
 from app.models.producto import Categoria, Marca, Producto
 from app.models.sucursal import Sucursal
 from app.models.usuario import Rol, Sesion, Usuario
-from app.models.venta import Cliente, Paciente, PagoVenta, RecetaOptica, Venta, VentaLinea
+from app.models.venta import Cliente, DevolucionVenta, DevolucionVentaLinea, Paciente, PagoVenta, RecetaOptica, Venta, VentaLinea
 
 __all__ = [
     "BaseModel", "Empresa", "Sucursal", "Usuario", "Rol", "Sesion",
     "Producto", "Categoria", "Marca", "InventarioExistencia", "CapaInventario",
     "KardexMovimiento", "CuentaContable", "AsientoContable", "LineaAsientoContable",
-    "Cliente", "Paciente", "RecetaOptica", "Venta", "VentaLinea", "PagoVenta",
+    "Cliente", "Paciente", "RecetaOptica", "Venta", "VentaLinea", "PagoVenta", "DevolucionVenta", "DevolucionVentaLinea",
     "Proveedor", "OrdenCompra", "OrdenCompraLinea", "RecepcionCompra", "RecepcionCompraLinea",
     "OrdenLaboratorio", "OrdenLaboratorioEtapa", "ConsumoMaterialLaboratorio", "ControlCalidadLaboratorio",
     "Garantia", "ReclamacionGarantia", "EventoGarantia",

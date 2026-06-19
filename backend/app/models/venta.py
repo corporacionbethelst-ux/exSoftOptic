@@ -110,3 +110,38 @@ class PagoVenta(BaseModel):
     fecha = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     venta = relationship("Venta", back_populates="pagos")
+
+
+class DevolucionVenta(BaseModel):
+    __tablename__ = "ventas_devoluciones"
+    __table_args__ = (UniqueConstraint("empresa_id", "folio", name="uq_devoluciones_venta_empresa_folio"),)
+
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey("empresas.id"), nullable=False, index=True)
+    sucursal_id = Column(UUID(as_uuid=True), ForeignKey("sucursales.id"), nullable=False, index=True)
+    venta_id = Column(UUID(as_uuid=True), ForeignKey("ventas.id"), nullable=False, index=True)
+    asiento_id = Column(UUID(as_uuid=True), ForeignKey("asientos_contables.id"), nullable=True)
+    folio = Column(String(40), nullable=False)
+    motivo = Column(String(250), nullable=False)
+    estado = Column(String(30), nullable=False, default="CONFIRMADA")
+    subtotal = Column(Numeric(15, 4), nullable=False, default=0)
+    impuestos = Column(Numeric(15, 4), nullable=False, default=0)
+    total = Column(Numeric(15, 4), nullable=False, default=0)
+    costo_total = Column(Numeric(15, 4), nullable=False, default=0)
+
+    venta = relationship("Venta")
+    lineas = relationship("DevolucionVentaLinea", back_populates="devolucion", cascade="all, delete-orphan")
+
+
+class DevolucionVentaLinea(BaseModel):
+    __tablename__ = "ventas_devoluciones_lineas"
+
+    devolucion_id = Column(UUID(as_uuid=True), ForeignKey("ventas_devoluciones.id", ondelete="CASCADE"), nullable=False, index=True)
+    venta_linea_id = Column(UUID(as_uuid=True), ForeignKey("ventas_lineas.id"), nullable=False, index=True)
+    producto_id = Column(UUID(as_uuid=True), ForeignKey("productos.id"), nullable=False, index=True)
+    cantidad = Column(Numeric(15, 3), nullable=False)
+    importe = Column(Numeric(15, 4), nullable=False)
+    costo_total = Column(Numeric(15, 4), nullable=False, default=0)
+
+    devolucion = relationship("DevolucionVenta", back_populates="lineas")
+    venta_linea = relationship("VentaLinea")
+    producto = relationship("Producto")
