@@ -99,6 +99,11 @@ except ImportError:
     pass
 
 try:
+    from app.models import configuracion
+except ImportError:
+    pass
+
+try:
     from app.models import activo_fijo
 except ImportError:
     pass

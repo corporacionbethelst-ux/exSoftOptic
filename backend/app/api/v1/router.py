@@ -2,7 +2,7 @@
 from fastapi import APIRouter
 
 # Importar SOLO los módulos que ya existen
-from app.api.v1.endpoints import auth, auditoria, compras, contabilidad, facturacion, garantias, inventario, laboratorio, nomina, productos, reportes, usuarios, ventas
+from app.api.v1.endpoints import auth, auditoria, compras, configuracion, contabilidad, facturacion, garantias, inventario, laboratorio, nomina, productos, reportes, usuarios, ventas
 
 api_router = APIRouter()
 
@@ -20,6 +20,7 @@ api_router.include_router(facturacion.router, prefix="/facturacion", tags=["Fact
 api_router.include_router(reportes.router, prefix="/reportes", tags=["Reportes"])
 api_router.include_router(nomina.router, prefix="/nomina", tags=["Nómina"])
 api_router.include_router(auditoria.router, prefix="/auditoria", tags=["Auditoría"])
+api_router.include_router(configuracion.router, prefix="/configuracion", tags=["Configuración"])
 
 # Los siguientes se agregarán cuando se implementen en el Paso 4 y siguientes:
 # api_router.include_router(productos.router, prefix="/productos", tags=["Productos"])
