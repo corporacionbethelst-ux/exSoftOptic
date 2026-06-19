@@ -1,6 +1,6 @@
 from app.models.base import BaseModel
 from app.models.auditoria import AuditoriaEvento
-from app.models.compra import OrdenCompra, OrdenCompraLinea, Proveedor, RecepcionCompra, RecepcionCompraLinea
+from app.models.compra import OrdenCompra, OrdenCompraLinea, Proveedor, RecepcionCompra, RecepcionCompraLinea, SolicitudCompra, SolicitudCompraLinea
 from app.models.configuracion import Impuesto, ReglaContable, SerieFolio, TipoCambio
 from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable
 from app.models.crm import CitaOptica, RecordatorioCliente
@@ -20,7 +20,7 @@ __all__ = [
     "Producto", "Categoria", "Marca", "InventarioExistencia", "CapaInventario",
     "KardexMovimiento", "CuentaContable", "AsientoContable", "LineaAsientoContable",
     "Cliente", "Paciente", "RecetaOptica", "Venta", "VentaLinea", "PagoVenta", "DevolucionVenta", "DevolucionVentaLinea",
-    "Proveedor", "OrdenCompra", "OrdenCompraLinea", "RecepcionCompra", "RecepcionCompraLinea",
+    "Proveedor", "OrdenCompra", "OrdenCompraLinea", "RecepcionCompra", "RecepcionCompraLinea", "SolicitudCompra", "SolicitudCompraLinea",
     "OrdenLaboratorio", "OrdenLaboratorioEtapa", "ConsumoMaterialLaboratorio", "ControlCalidadLaboratorio",
     "Garantia", "ReclamacionGarantia", "EventoGarantia",
     "Factura", "FacturaLinea", "FacturaEvento",

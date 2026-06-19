@@ -108,3 +108,32 @@ class RecepcionCompraResponse(BaseModel):
     estado: str
     total: Decimal
     lineas: list[RecepcionCompraLineaResponse] = []
+
+
+class SolicitudCompraGenerarRequest(BaseModel):
+    sucursal_id: UUID
+    folio: str = Field(..., min_length=1, max_length=40)
+    observaciones: str | None = Field(None, max_length=500)
+
+
+class SolicitudCompraLineaResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    producto_id: UUID
+    cantidad_sugerida: Decimal
+    costo_estimado: Decimal
+    motivo: str
+
+
+class SolicitudCompraResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    empresa_id: UUID
+    sucursal_id: UUID
+    folio: str
+    origen: str
+    estado: str
+    observaciones: str | None
+    lineas: list[SolicitudCompraLineaResponse] = []

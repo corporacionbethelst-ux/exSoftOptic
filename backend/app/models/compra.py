@@ -85,3 +85,30 @@ class RecepcionCompraLinea(BaseModel):
     recepcion = relationship("RecepcionCompra", back_populates="lineas")
     orden_linea = relationship("OrdenCompraLinea")
     producto = relationship("Producto")
+
+
+class SolicitudCompra(BaseModel):
+    __tablename__ = "solicitudes_compra"
+    __table_args__ = (UniqueConstraint("empresa_id", "folio", name="uq_solicitudes_compra_empresa_folio"),)
+
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey("empresas.id"), nullable=False, index=True)
+    sucursal_id = Column(UUID(as_uuid=True), ForeignKey("sucursales.id"), nullable=False, index=True)
+    folio = Column(String(40), nullable=False)
+    origen = Column(String(40), nullable=False, default="STOCK_MINIMO")
+    estado = Column(String(30), nullable=False, default="BORRADOR")
+    observaciones = Column(String(500), nullable=True)
+
+    lineas = relationship("SolicitudCompraLinea", back_populates="solicitud", cascade="all, delete-orphan")
+
+
+class SolicitudCompraLinea(BaseModel):
+    __tablename__ = "solicitudes_compra_lineas"
+
+    solicitud_id = Column(UUID(as_uuid=True), ForeignKey("solicitudes_compra.id", ondelete="CASCADE"), nullable=False, index=True)
+    producto_id = Column(UUID(as_uuid=True), ForeignKey("productos.id"), nullable=False, index=True)
+    cantidad_sugerida = Column(Numeric(15, 3), nullable=False)
+    costo_estimado = Column(Numeric(15, 4), nullable=False, default=0)
+    motivo = Column(String(250), nullable=False)
+
+    solicitud = relationship("SolicitudCompra", back_populates="lineas")
+    producto = relationship("Producto")
