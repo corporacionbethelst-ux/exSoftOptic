@@ -6,7 +6,9 @@ import logging
 
 from app.core.config import settings
 from app.api.v1.router import api_router
+from app.core.error_handlers import register_exception_handlers
 from app.core.request_context import RequestContextMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
 
 # Configurar logging
 logging.basicConfig(
@@ -38,6 +40,7 @@ app = FastAPI(
 
 # Request context para auditoría/trazabilidad
 app.add_middleware(RequestContextMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Configurar CORS
 app.add_middleware(
@@ -47,6 +50,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Registrar handlers de error estándar
+register_exception_handlers(app)
 
 # Incluir routers
 app.include_router(api_router, prefix="/api/v1")
