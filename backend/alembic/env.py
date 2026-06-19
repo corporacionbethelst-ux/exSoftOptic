@@ -104,6 +104,11 @@ except ImportError:
     pass
 
 try:
+    from app.models import crm
+except ImportError:
+    pass
+
+try:
     from app.models import activo_fijo
 except ImportError:
     pass

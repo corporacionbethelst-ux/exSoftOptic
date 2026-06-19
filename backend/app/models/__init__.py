@@ -3,6 +3,7 @@ from app.models.auditoria import AuditoriaEvento
 from app.models.compra import OrdenCompra, OrdenCompraLinea, Proveedor, RecepcionCompra, RecepcionCompraLinea
 from app.models.configuracion import Impuesto, ReglaContable, SerieFolio, TipoCambio
 from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable
+from app.models.crm import CitaOptica, RecordatorioCliente
 from app.models.empresa import Empresa
 from app.models.factura import Factura, FacturaEvento, FacturaLinea
 from app.models.garantia import EventoGarantia, Garantia, ReclamacionGarantia
@@ -24,5 +25,5 @@ __all__ = [
     "Garantia", "ReclamacionGarantia", "EventoGarantia",
     "Factura", "FacturaLinea", "FacturaEvento",
     "Empleado", "NominaPeriodo", "NominaRecibo",
-    "AuditoriaEvento", "Impuesto", "SerieFolio", "TipoCambio", "ReglaContable",
+    "AuditoriaEvento", "Impuesto", "SerieFolio", "TipoCambio", "ReglaContable", "CitaOptica", "RecordatorioCliente",
 ]
