@@ -64,6 +64,21 @@ except ImportError:
     pass
 
 try:
+    from app.models import laboratorio
+except ImportError:
+    pass
+
+try:
+    from app.models import garantia
+except ImportError:
+    pass
+
+try:
+    from app.models import factura
+except ImportError:
+    pass
+
+try:
     from app.models import contabilidad
 except ImportError:
     pass
@@ -77,6 +92,30 @@ try:
     from app.models import nomina
 except ImportError:
     pass
+
+try:
+    from app.models import auditoria
+except ImportError:
+    pass
+
+try:
+    from app.models import configuracion
+except ImportError:
+    pass
+
+try:
+    from app.models import crm
+except ImportError:
+    pass
+
+try:
+    from app.models import presupuesto
+except ImportError:
+    pass
+
+from app.models import outbox
+
+from app.models import idempotencia
 
 try:
     from app.models import activo_fijo
