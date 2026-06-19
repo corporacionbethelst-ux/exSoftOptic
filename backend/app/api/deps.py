@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
+from uuid import UUID
 
 from app.core.database import get_db
 from app.services.auth_service import auth_service
@@ -128,3 +129,20 @@ async def get_current_super_admin(
             detail="Se requieren privilegios de super administrador"
         )
     return current_user
+
+def require_empresa_scope(empresa_id: UUID, current_user: Usuario) -> None:
+    """ABAC: bloquea acceso cross-tenant por empresa."""
+    if current_user.empresa_id != empresa_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado a datos de otra empresa",
+        )
+
+
+def require_sucursal_scope(sucursal_id: UUID | None, current_user: Usuario) -> None:
+    """ABAC: usuarios con sucursal asignada solo operan su sucursal."""
+    if current_user.sucursal_id is not None and sucursal_id != current_user.sucursal_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado a datos de otra sucursal",
+        )
