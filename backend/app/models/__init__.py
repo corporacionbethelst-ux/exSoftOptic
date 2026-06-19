@@ -7,6 +7,7 @@ from app.models.crm import CitaOptica, RecordatorioCliente
 from app.models.empresa import Empresa
 from app.models.factura import Factura, FacturaEvento, FacturaLinea
 from app.models.garantia import EventoGarantia, Garantia, ReclamacionGarantia
+from app.models.idempotencia import IdempotencyKey
 from app.models.inventario import CapaInventario, InventarioExistencia, KardexMovimiento
 from app.models.laboratorio import ControlCalidadLaboratorio, ConsumoMaterialLaboratorio, OrdenLaboratorio, OrdenLaboratorioEtapa
 from app.models.nomina import Empleado, NominaPeriodo, NominaRecibo
@@ -26,6 +27,7 @@ __all__ = [
     "Proveedor", "OrdenCompra", "OrdenCompraLinea", "RecepcionCompra", "RecepcionCompraLinea", "SolicitudCompra", "SolicitudCompraLinea",
     "OrdenLaboratorio", "OrdenLaboratorioEtapa", "ConsumoMaterialLaboratorio", "ControlCalidadLaboratorio",
     "Garantia", "ReclamacionGarantia", "EventoGarantia",
+    "IdempotencyKey",
     "Factura", "FacturaLinea", "FacturaEvento",
     "Empleado", "NominaPeriodo", "NominaRecibo",
     "OutboxEvent",

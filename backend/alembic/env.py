@@ -115,6 +115,8 @@ except ImportError:
 
 from app.models import outbox
 
+from app.models import idempotencia
+
 try:
     from app.models import activo_fijo
 except ImportError:

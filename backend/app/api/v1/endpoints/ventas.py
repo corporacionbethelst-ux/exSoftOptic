@@ -1,12 +1,15 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_active_user, require_permissions
 from app.core.database import get_db
 from app.models.usuario import Usuario
 from app.schemas.ventas import DevolucionVentaCreate, DevolucionVentaResponse, VentaConfirmarRequest, VentaCreate, VentaResponse
+from app.services.idempotency_service import IdempotencyService
 from app.services.sales_return_service import SalesReturnService
 from app.services.sales_service import SalesService
 from app.services.secured_audit import audit_user_action
@@ -56,7 +59,22 @@ async def confirmar_venta(
     payload: VentaConfirmarRequest,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_active_user),
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
 ):
+    idempotency = None
+    if idempotency_key:
+        try:
+            idempotency = await IdempotencyService(db).start(
+                empresa_id=current_user.empresa_id,
+                scope="ventas.confirmar",
+                key=idempotency_key,
+                request_payload={"venta_id": str(venta_id), **payload.model_dump()},
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        if idempotency.replay:
+            return JSONResponse(status_code=idempotency.record.response_status or status.HTTP_200_OK, content=idempotency.record.response_body)
+
     try:
         venta = await SalesService(db).confirmar_venta(
             empresa_id=current_user.empresa_id,
@@ -64,8 +82,14 @@ async def confirmar_venta(
             **payload.model_dump(),
         )
         await audit_user_action(db, current_user=current_user, accion="VENTA_CONFIRMAR", entidad="Venta", entidad_id=venta.id, payload={"folio": venta.folio, "total": str(venta.total)})
+        if idempotency:
+            response_body = jsonable_encoder(VentaResponse.model_validate(venta))
+            await IdempotencyService(db).complete(record=idempotency.record, response_status=status.HTTP_200_OK, response_body=response_body)
+            return JSONResponse(status_code=status.HTTP_200_OK, content=response_body)
         return venta
     except ValueError as exc:
+        if idempotency:
+            await IdempotencyService(db).fail(record=idempotency.record, error=str(exc))
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
