@@ -6,6 +6,7 @@ import logging
 
 from app.core.config import settings
 from app.api.v1.router import api_router
+from app.core.request_context import RequestContextMiddleware
 
 # Configurar logging
 logging.basicConfig(
@@ -34,6 +35,9 @@ app = FastAPI(
     redoc_url=None,
     lifespan=lifespan,
 )
+
+# Request context para auditoría/trazabilidad
+app.add_middleware(RequestContextMiddleware)
 
 # Configurar CORS
 app.add_middleware(
