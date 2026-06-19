@@ -7,6 +7,7 @@ from app.api.deps import get_current_active_user, require_permissions
 from app.core.database import get_db
 from app.models.usuario import Usuario
 from app.schemas.outbox import OutboxEventCreate, OutboxEventFailRequest, OutboxEventResponse
+from app.services.outbox_dispatcher import OutboxDispatcherService
 from app.services.outbox_service import OutboxService
 from app.services.secured_audit import audit_user_action
 
@@ -47,3 +48,10 @@ async def marcar_evento_fallido(event_id: UUID, payload: OutboxEventFailRequest,
         return await OutboxService(db).mark_failed(empresa_id=current_user.empresa_id, event_id=event_id, error=payload.error, retry_delay_seconds=payload.retry_delay_seconds)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/events/dispatch", dependencies=[Depends(require_permissions(["outbox.eventos.procesar"]))])
+async def despachar_eventos_pendientes(limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    # Los handlers reales se inyectarán desde workers/colas; este endpoint permite validar y operar el ciclo sin acoplar infraestructura.
+    dispatcher = OutboxDispatcherService(db, handlers={})
+    return await dispatcher.dispatch_pending(empresa_id=current_user.empresa_id, limit=limit)

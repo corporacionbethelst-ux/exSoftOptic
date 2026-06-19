@@ -8,9 +8,11 @@ from sqlalchemy.orm import selectinload
 
 from app.models.producto import Producto
 from app.models.venta import Cliente, Paciente, PagoVenta, RecetaOptica, Venta, VentaLinea
+from app.schemas.outbox import OutboxEventCreate
 from app.schemas.ventas import VentaCreate
 from app.services.accounting_engine import AccountingEngine
 from app.services.inventory_service import InventoryService
+from app.services.outbox_service import OutboxService
 
 
 class SalesService:
@@ -113,6 +115,16 @@ class SalesService:
             venta.costo_total = costo_total
             venta.asiento_id = asiento.id
             venta.estado = "CONFIRMADA"
+            await OutboxService(self.db).enqueue(
+                empresa_id=empresa_id,
+                payload=OutboxEventCreate(
+                    aggregate_type="Venta",
+                    aggregate_id=str(venta.id),
+                    event_type="VentaConfirmada",
+                    payload={"venta_id": str(venta.id), "folio": venta.folio, "total": str(venta.total), "costo_total": str(costo_total)},
+                    idempotency_key=f"venta:{venta.id}:confirmada",
+                ),
+            )
             await self.db.flush()
         return await self.obtener_venta(empresa_id=empresa_id, venta_id=venta_id)
 

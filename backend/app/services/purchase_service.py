@@ -9,8 +9,10 @@ from sqlalchemy.orm import selectinload
 from app.models.compra import OrdenCompra, OrdenCompraLinea, Proveedor, RecepcionCompra, RecepcionCompraLinea
 from app.models.producto import Producto
 from app.schemas.compras import OrdenCompraCreate, RecepcionCompraCreate
+from app.schemas.outbox import OutboxEventCreate
 from app.services.accounting_engine import AccountingEngine
 from app.services.inventory_service import InventoryService
+from app.services.outbox_service import OutboxService
 
 
 class PurchaseService:
@@ -118,6 +120,16 @@ class PurchaseService:
             recepcion.total = total
             recepcion.asiento_id = asiento.id
             orden.estado = "RECIBIDA" if all(l.cantidad_recibida == l.cantidad for l in orden.lineas) else "PARCIAL"
+            await OutboxService(self.db).enqueue(
+                empresa_id=empresa_id,
+                payload=OutboxEventCreate(
+                    aggregate_type="RecepcionCompra",
+                    aggregate_id=str(recepcion.id),
+                    event_type="CompraRecibida",
+                    payload={"recepcion_id": str(recepcion.id), "orden_id": str(orden.id), "folio": recepcion.folio, "total": str(total)},
+                    idempotency_key=f"recepcion-compra:{recepcion.id}:recibida",
+                ),
+            )
             await self.db.flush()
         return await self.obtener_recepcion(empresa_id=empresa_id, recepcion_id=recepcion.id)
 

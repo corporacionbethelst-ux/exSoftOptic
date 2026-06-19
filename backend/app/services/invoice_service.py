@@ -8,7 +8,9 @@ from sqlalchemy.orm import selectinload
 from app.models.factura import Factura, FacturaEvento, FacturaLinea
 from app.models.venta import Venta
 from app.schemas.facturacion import FacturaCancelarRequest, FacturaEmitirRequest
+from app.schemas.outbox import OutboxEventCreate
 from app.services.einvoicing_provider import EInvoiceLine, EInvoicePayload, get_einvoicing_provider
+from app.services.outbox_service import OutboxService
 
 
 class InvoiceService:
@@ -78,6 +80,16 @@ class InvoiceService:
             factura.fecha_timbrado = datetime.now(timezone.utc)
             factura.estado = "TIMBRADA"
             await self._evento(factura.id, "FACTURA_TIMBRADA", f"Factura timbrada con UUID {result.uuid_fiscal}")
+            await OutboxService(self.db).enqueue(
+                empresa_id=empresa_id,
+                payload=OutboxEventCreate(
+                    aggregate_type="Factura",
+                    aggregate_id=str(factura.id),
+                    event_type="FacturaTimbrada",
+                    payload={"factura_id": str(factura.id), "venta_id": str(venta.id), "folio": factura.folio, "uuid_fiscal": result.uuid_fiscal, "total": str(factura.total)},
+                    idempotency_key=f"factura:{factura.id}:timbrada",
+                ),
+            )
             await self.db.flush()
         return await self.obtener_factura(empresa_id=empresa_id, factura_id=factura.id)
 
@@ -90,6 +102,16 @@ class InvoiceService:
             await provider.cancel_invoice(factura.uuid_fiscal, payload.motivo)
             factura.estado = "CANCELADA"
             await self._evento(factura.id, "FACTURA_CANCELADA", payload.motivo)
+            await OutboxService(self.db).enqueue(
+                empresa_id=empresa_id,
+                payload=OutboxEventCreate(
+                    aggregate_type="Factura",
+                    aggregate_id=str(factura.id),
+                    event_type="FacturaCancelada",
+                    payload={"factura_id": str(factura.id), "folio": factura.folio, "uuid_fiscal": factura.uuid_fiscal, "motivo": payload.motivo},
+                    idempotency_key=f"factura:{factura.id}:cancelada",
+                ),
+            )
             await self.db.flush()
         return await self.obtener_factura(empresa_id=empresa_id, factura_id=factura_id)
 
