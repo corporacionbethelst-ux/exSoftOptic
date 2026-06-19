@@ -12,6 +12,7 @@ from app.models.laboratorio import ControlCalidadLaboratorio, ConsumoMaterialLab
 from app.models.nomina import Empleado, NominaPeriodo, NominaRecibo
 from app.models.producto import Categoria, Marca, Producto
 from app.models.sucursal import Sucursal
+from app.models.tesoreria import ConciliacionBancaria, CuentaBancaria, MovimientoBancario
 from app.models.usuario import Rol, Sesion, Usuario
 from app.models.venta import Cliente, DevolucionVenta, DevolucionVentaLinea, Paciente, PagoVenta, RecetaOptica, Venta, VentaLinea
 
@@ -25,5 +26,5 @@ __all__ = [
     "Garantia", "ReclamacionGarantia", "EventoGarantia",
     "Factura", "FacturaLinea", "FacturaEvento",
     "Empleado", "NominaPeriodo", "NominaRecibo",
-    "AuditoriaEvento", "Impuesto", "SerieFolio", "TipoCambio", "ReglaContable", "CitaOptica", "RecordatorioCliente",
+    "AuditoriaEvento", "Impuesto", "SerieFolio", "TipoCambio", "ReglaContable", "CitaOptica", "RecordatorioCliente", "CuentaBancaria", "MovimientoBancario", "ConciliacionBancaria",
 ]
