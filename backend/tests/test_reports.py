@@ -101,3 +101,59 @@ async def test_libro_diario_y_mayor_contable(db_session):
     assert len(diario.lineas) == 2
     assert mayor.cuentas[0].codigo == "102.01"
     assert mayor.cuentas[0].saldo_final == Decimal("250")
+
+
+@pytest.mark.asyncio
+async def test_estados_financieros_calculan_resultados_y_balance(db_session):
+    from datetime import date
+    from decimal import Decimal
+    import uuid
+
+    from app.models.contabilidad import CuentaContable
+    from app.models.empresa import Empresa
+    from app.services.accounting_engine import AccountingEngine, AccountingLineInput
+    from app.services.report_service import ReportService
+
+    empresa = Empresa(id=uuid.uuid4(), razon_social="Estados Financieros SA", rfc="EFI260620AA1", regimen_fiscal="601", codigo_postal="06600")
+    db_session.add(empresa)
+    await db_session.flush()
+    db_session.add_all(
+        [
+            CuentaContable(empresa_id=empresa.id, codigo="102.01", nombre="Bancos", tipo="ACTIVO", naturaleza="DEUDORA"),
+            CuentaContable(empresa_id=empresa.id, codigo="201.01", nombre="CxP", tipo="PASIVO", naturaleza="ACREEDORA"),
+            CuentaContable(empresa_id=empresa.id, codigo="301.01", nombre="Capital", tipo="CAPITAL", naturaleza="ACREEDORA"),
+            CuentaContable(empresa_id=empresa.id, codigo="401.01", nombre="Ingresos", tipo="INGRESO", naturaleza="ACREEDORA"),
+            CuentaContable(empresa_id=empresa.id, codigo="501.01", nombre="Costo", tipo="COSTO", naturaleza="DEUDORA"),
+            CuentaContable(empresa_id=empresa.id, codigo="601.01", nombre="Gasto", tipo="GASTO", naturaleza="DEUDORA"),
+        ]
+    )
+    await db_session.flush()
+    engine = AccountingEngine(db_session)
+    await engine.create_journal_entry(
+        empresa_id=empresa.id,
+        fecha=date(2026, 6, 20),
+        descripcion="Venta con costo y gasto",
+        origen="TEST",
+        referencia="EF-1",
+        lines=[
+            AccountingLineInput("102.01", "Banco", debe=Decimal("1000")),
+            AccountingLineInput("401.01", "Ingreso", haber=Decimal("1000")),
+            AccountingLineInput("501.01", "Costo", debe=Decimal("400")),
+            AccountingLineInput("201.01", "CxP", haber=Decimal("400")),
+            AccountingLineInput("601.01", "Gasto", debe=Decimal("100")),
+            AccountingLineInput("301.01", "Capital", haber=Decimal("100")),
+        ],
+    )
+
+    service = ReportService(db_session)
+    resultados = await service.estado_resultados(empresa_id=empresa.id, fecha_inicio=date(2026, 6, 1), fecha_fin=date(2026, 6, 30))
+    balance = await service.balance_general(empresa_id=empresa.id, fecha_fin=date(2026, 6, 30))
+
+    assert resultados.ingresos == Decimal("1000")
+    assert resultados.costos == Decimal("400")
+    assert resultados.gastos == Decimal("100")
+    assert resultados.utilidad_operativa == Decimal("500")
+    assert balance.activos == Decimal("1000")
+    assert balance.pasivos == Decimal("400")
+    assert balance.capital == Decimal("100")
+    assert balance.comprobacion == Decimal("500")

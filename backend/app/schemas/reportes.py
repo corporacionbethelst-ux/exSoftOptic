@@ -98,3 +98,38 @@ class MayorCuentaResponse(BaseModel):
 class LibroMayorResponse(BaseModel):
     empresa_id: UUID
     cuentas: list[MayorCuentaResponse]
+
+
+class EstadoResultadosCuentaResponse(BaseModel):
+    cuenta_id: UUID
+    codigo: str
+    nombre: str
+    tipo: str
+    saldo: Decimal
+
+
+class EstadoResultadosResponse(BaseModel):
+    empresa_id: UUID
+    ingresos: Decimal
+    costos: Decimal
+    gastos: Decimal
+    utilidad_bruta: Decimal
+    utilidad_operativa: Decimal
+    cuentas: list[EstadoResultadosCuentaResponse]
+
+
+class BalanceGeneralCuentaResponse(BaseModel):
+    cuenta_id: UUID
+    codigo: str
+    nombre: str
+    tipo: str
+    saldo: Decimal
+
+
+class BalanceGeneralResponse(BaseModel):
+    empresa_id: UUID
+    activos: Decimal
+    pasivos: Decimal
+    capital: Decimal
+    comprobacion: Decimal
+    cuentas: list[BalanceGeneralCuentaResponse]

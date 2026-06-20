@@ -11,7 +11,11 @@ from app.models.producto import Producto
 from app.models.venta import Venta
 from app.schemas.reportes import (
     BalanzaComprobacionResponse,
+    BalanceGeneralCuentaResponse,
+    BalanceGeneralResponse,
     BalanzaCuentaResponse,
+    EstadoResultadosCuentaResponse,
+    EstadoResultadosResponse,
     InventarioValuadoItemResponse,
     InventarioValuadoResponse,
     LibroDiarioLineaResponse,
@@ -27,6 +31,82 @@ from app.schemas.reportes import (
 class ReportService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def estado_resultados(self, *, empresa_id: UUID, fecha_inicio: date | None = None, fecha_fin: date | None = None) -> EstadoResultadosResponse:
+        rows = await self._saldos_por_cuenta(empresa_id=empresa_id, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin)
+        cuentas = []
+        ingresos = Decimal("0")
+        costos = Decimal("0")
+        gastos = Decimal("0")
+        for cuenta, debe, haber in rows:
+            tipo = cuenta.tipo.upper()
+            if tipo not in {"INGRESO", "COSTO", "GASTO", "EGRESO"}:
+                continue
+            saldo = (haber - debe) if tipo == "INGRESO" else (debe - haber)
+            cuentas.append(EstadoResultadosCuentaResponse(cuenta_id=cuenta.id, codigo=cuenta.codigo, nombre=cuenta.nombre, tipo=cuenta.tipo, saldo=saldo))
+            if tipo == "INGRESO":
+                ingresos += saldo
+            elif tipo == "COSTO":
+                costos += saldo
+            else:
+                gastos += saldo
+        utilidad_bruta = ingresos - costos
+        utilidad_operativa = utilidad_bruta - gastos
+        return EstadoResultadosResponse(
+            empresa_id=empresa_id,
+            ingresos=ingresos,
+            costos=costos,
+            gastos=gastos,
+            utilidad_bruta=utilidad_bruta,
+            utilidad_operativa=utilidad_operativa,
+            cuentas=cuentas,
+        )
+
+    async def balance_general(self, *, empresa_id: UUID, fecha_fin: date | None = None) -> BalanceGeneralResponse:
+        rows = await self._saldos_por_cuenta(empresa_id=empresa_id, fecha_inicio=None, fecha_fin=fecha_fin)
+        cuentas = []
+        activos = Decimal("0")
+        pasivos = Decimal("0")
+        capital = Decimal("0")
+        for cuenta, debe, haber in rows:
+            tipo = cuenta.tipo.upper()
+            if tipo not in {"ACTIVO", "PASIVO", "CAPITAL", "PATRIMONIO"}:
+                continue
+            saldo = (debe - haber) if tipo == "ACTIVO" else (haber - debe)
+            cuentas.append(BalanceGeneralCuentaResponse(cuenta_id=cuenta.id, codigo=cuenta.codigo, nombre=cuenta.nombre, tipo=cuenta.tipo, saldo=saldo))
+            if tipo == "ACTIVO":
+                activos += saldo
+            elif tipo == "PASIVO":
+                pasivos += saldo
+            else:
+                capital += saldo
+        return BalanceGeneralResponse(
+            empresa_id=empresa_id,
+            activos=activos,
+            pasivos=pasivos,
+            capital=capital,
+            comprobacion=activos - pasivos - capital,
+            cuentas=cuentas,
+        )
+
+    async def _saldos_por_cuenta(self, *, empresa_id: UUID, fecha_inicio: date | None = None, fecha_fin: date | None = None):
+        query = (
+            select(
+                CuentaContable,
+                func.coalesce(func.sum(LineaAsientoContable.debe), 0).label("debe"),
+                func.coalesce(func.sum(LineaAsientoContable.haber), 0).label("haber"),
+            )
+            .join(LineaAsientoContable, LineaAsientoContable.cuenta_id == CuentaContable.id)
+            .join(AsientoContable, AsientoContable.id == LineaAsientoContable.asiento_id)
+            .where(CuentaContable.empresa_id == empresa_id, AsientoContable.empresa_id == empresa_id)
+            .group_by(CuentaContable.id)
+            .order_by(CuentaContable.codigo.asc())
+        )
+        if fecha_inicio:
+            query = query.where(AsientoContable.fecha >= fecha_inicio)
+        if fecha_fin:
+            query = query.where(AsientoContable.fecha <= fecha_fin)
+        return (await self.db.execute(query)).all()
 
     async def libro_diario(self, *, empresa_id: UUID, fecha_inicio: date | None = None, fecha_fin: date | None = None) -> LibroDiarioResponse:
         query = (
