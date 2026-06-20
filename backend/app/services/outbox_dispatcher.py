@@ -12,7 +12,13 @@ OutboxHandler = Callable[[OutboxEvent], Awaitable[None]]
 class OutboxDispatcherService:
     """Dispatcher operacional del outbox con handlers inyectables por tipo de evento."""
 
-    def __init__(self, db: AsyncSession, *, handlers: dict[str, OutboxHandler], retry_delay_seconds: int = 60) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        *,
+        handlers: dict[str, OutboxHandler],
+        retry_delay_seconds: int | None = None,
+    ) -> None:
         self.db = db
         self.handlers = handlers
         self.retry_delay_seconds = retry_delay_seconds

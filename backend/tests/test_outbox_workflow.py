@@ -110,3 +110,46 @@ async def test_outbox_dispatcher_reschedules_missing_handler(db_session):
     assert result == {"dispatched": 0, "failed": 1, "skipped": 1, "total": 1}
     assert event.status == OutboxService.STATUS_PENDING
     assert "No existe handler" in event.last_error
+
+
+@pytest.mark.asyncio
+async def test_outbox_failure_uses_exponential_backoff_when_delay_is_not_forced(db_session):
+    empresa = Empresa(id=uuid.uuid4(), razon_social="Outbox Backoff SA", rfc="OUT260620AA1", regimen_fiscal="601", codigo_postal="06600")
+    db_session.add(empresa)
+    await db_session.flush()
+
+    service = OutboxService(db_session)
+    event = await service.enqueue(
+        empresa_id=empresa.id,
+        payload=OutboxEventCreate(
+            aggregate_type="Factura",
+            aggregate_id="F-BACKOFF",
+            event_type="FacturaTimbrada",
+            payload={"uuid": "retry"},
+            max_attempts=4,
+        ),
+    )
+
+    first_processing = await service.mark_processing(empresa_id=empresa.id, event_id=event.id)
+    first_failed = await service.mark_failed(empresa_id=empresa.id, event_id=first_processing.id, error="temporary broker outage")
+    first_available_at = first_failed.available_at
+
+    assert first_failed.status == OutboxService.STATUS_PENDING
+    assert service.calculate_retry_delay_seconds(attempts=first_failed.attempts) == 60
+
+    first_failed.available_at = first_available_at.replace(year=2000)
+    await db_session.flush()
+    second_processing = await service.mark_processing(empresa_id=empresa.id, event_id=event.id)
+    second_failed = await service.mark_failed(empresa_id=empresa.id, event_id=second_processing.id, error="temporary broker outage")
+
+    assert second_failed.status == OutboxService.STATUS_PENDING
+    assert service.calculate_retry_delay_seconds(attempts=second_failed.attempts) == 120
+    assert second_failed.available_at > first_available_at
+
+
+def test_outbox_retry_delay_is_capped():
+    service = OutboxService(db=None)  # type: ignore[arg-type]
+
+    assert service.calculate_retry_delay_seconds(attempts=1) == 60
+    assert service.calculate_retry_delay_seconds(attempts=2) == 120
+    assert service.calculate_retry_delay_seconds(attempts=20) == 3600

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from math import pow
 from uuid import UUID
 
 from sqlalchemy import select
@@ -86,7 +87,14 @@ class OutboxService:
         await self.db.flush()
         return event
 
-    async def mark_failed(self, *, empresa_id: UUID, event_id: UUID, error: str, retry_delay_seconds: int = 60) -> OutboxEvent:
+    async def mark_failed(
+        self,
+        *,
+        empresa_id: UUID,
+        event_id: UUID,
+        error: str,
+        retry_delay_seconds: int | None = None,
+    ) -> OutboxEvent:
         event = await self._get_scoped(empresa_id=empresa_id, event_id=event_id, lock=True)
         event.last_error = error[:2000]
         event.locked_at = None
@@ -94,9 +102,20 @@ class OutboxService:
             event.status = self.STATUS_FAILED
         else:
             event.status = self.STATUS_PENDING
-            event.available_at = datetime.now(timezone.utc) + timedelta(seconds=retry_delay_seconds)
+            delay_seconds = retry_delay_seconds
+            if delay_seconds is None:
+                delay_seconds = self.calculate_retry_delay_seconds(event.attempts)
+            event.available_at = datetime.now(timezone.utc) + timedelta(seconds=delay_seconds)
         await self.db.flush()
         return event
+
+    def calculate_retry_delay_seconds(
+        self, *, attempts: int, base_delay_seconds: int = 60, max_delay_seconds: int = 3600
+    ) -> int:
+        """Calcula backoff exponencial acotado para reintentos de eventos outbox."""
+        normalized_attempts = max(attempts, 1)
+        delay = int(base_delay_seconds * pow(2, normalized_attempts - 1))
+        return min(delay, max_delay_seconds)
 
     async def _get_scoped(self, *, empresa_id: UUID, event_id: UUID, lock: bool = False) -> OutboxEvent:
         query = select(OutboxEvent).where(OutboxEvent.empresa_id == empresa_id, OutboxEvent.id == event_id)
