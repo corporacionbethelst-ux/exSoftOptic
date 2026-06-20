@@ -118,3 +118,23 @@ class InventarioAlertaResponse(BaseModel):
     punto_reorden: Decimal | None = None
     valor_total: Decimal
     mensaje: str
+
+
+class PeriodoContableCreate(BaseModel):
+    codigo: str = Field(..., min_length=1, max_length=20)
+    nombre: str = Field(..., min_length=1, max_length=120)
+    fecha_inicio: date
+    fecha_fin: date
+
+
+class PeriodoContableResponse(PeriodoContableCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    empresa_id: UUID
+    estado: str
+    created_at: datetime
+
+
+class PeriodoContableEstadoRequest(BaseModel):
+    estado: str = Field(..., pattern="^(ABIERTO|CERRADO)$")

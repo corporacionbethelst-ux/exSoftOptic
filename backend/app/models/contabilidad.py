@@ -20,6 +20,18 @@ class CuentaContable(BaseModel):
     padre = relationship("CuentaContable", remote_side="CuentaContable.id")
 
 
+class PeriodoContable(BaseModel):
+    __tablename__ = "periodos_contables"
+    __table_args__ = (UniqueConstraint("empresa_id", "codigo", name="uq_periodos_empresa_codigo"),)
+
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey("empresas.id"), nullable=False, index=True)
+    codigo = Column(String(20), nullable=False)
+    nombre = Column(String(120), nullable=False)
+    fecha_inicio = Column(Date, nullable=False, index=True)
+    fecha_fin = Column(Date, nullable=False, index=True)
+    estado = Column(String(20), nullable=False, default="ABIERTO", index=True)
+
+
 class AsientoContable(BaseModel):
     __tablename__ = "asientos_contables"
     __table_args__ = (Index("ix_asientos_empresa_fecha", "empresa_id", "fecha"),)

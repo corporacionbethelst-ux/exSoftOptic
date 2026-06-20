@@ -2,7 +2,7 @@ from app.models.base import BaseModel
 from app.models.auditoria import AuditoriaEvento
 from app.models.compra import OrdenCompra, OrdenCompraLinea, Proveedor, RecepcionCompra, RecepcionCompraLinea, SolicitudCompra, SolicitudCompraLinea
 from app.models.configuracion import Impuesto, ReglaContable, SerieFolio, TipoCambio
-from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable
+from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable, PeriodoContable
 from app.models.crm import CitaOptica, RecordatorioCliente
 from app.models.empresa import Empresa
 from app.models.factura import Factura, FacturaEvento, FacturaLinea
@@ -22,7 +22,7 @@ from app.models.venta import Cliente, DevolucionVenta, DevolucionVentaLinea, Pac
 __all__ = [
     "BaseModel", "Empresa", "Sucursal", "Usuario", "Rol", "Sesion",
     "Producto", "Categoria", "Marca", "InventarioExistencia", "CapaInventario",
-    "KardexMovimiento", "CuentaContable", "AsientoContable", "LineaAsientoContable",
+    "KardexMovimiento", "CuentaContable", "AsientoContable", "LineaAsientoContable", "PeriodoContable",
     "Cliente", "Paciente", "RecetaOptica", "Venta", "VentaLinea", "PagoVenta", "DevolucionVenta", "DevolucionVentaLinea",
     "Proveedor", "OrdenCompra", "OrdenCompraLinea", "RecepcionCompra", "RecepcionCompraLinea", "SolicitudCompra", "SolicitudCompraLinea",
     "OrdenLaboratorio", "OrdenLaboratorioEtapa", "ConsumoMaterialLaboratorio", "ControlCalidadLaboratorio",

@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable
+from app.services.accounting_period_service import AccountingPeriodService
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,8 @@ class AccountingEngine:
         total_haber = sum((line.haber for line in lines), Decimal("0"))
         if total_debe <= 0 or total_debe != total_haber:
             raise ValueError("Asiento descuadrado: debe y haber deben ser iguales y positivos")
+
+        await AccountingPeriodService(self.db).assert_fecha_contabilizable(empresa_id=empresa_id, fecha=fecha)
 
         codes = {line.cuenta_codigo for line in lines}
         result = await self.db.execute(
