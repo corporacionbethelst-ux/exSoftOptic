@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.idempotencia import IdempotencyKey
@@ -88,6 +88,23 @@ class IdempotencyService:
         record.locked_until = None
         await self.db.flush()
         return record
+
+    async def cleanup_expired(self, *, empresa_id: UUID, older_than: datetime | None = None, limit: int = 500) -> int:
+        """Elimina claves idempotentes expiradas para mantener compacta la tabla operacional."""
+        cutoff = older_than or datetime.now(timezone.utc)
+        expired_ids_result = await self.db.execute(
+            select(IdempotencyKey.id)
+            .where(IdempotencyKey.empresa_id == empresa_id, IdempotencyKey.expires_at <= cutoff)
+            .order_by(IdempotencyKey.expires_at.asc())
+            .limit(limit)
+        )
+        expired_ids = list(expired_ids_result.scalars().all())
+        if not expired_ids:
+            return 0
+
+        await self.db.execute(delete(IdempotencyKey).where(IdempotencyKey.id.in_(expired_ids)))
+        await self.db.flush()
+        return len(expired_ids)
 
     def hash_payload(self, payload: dict) -> str:
         canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
