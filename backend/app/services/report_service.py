@@ -14,14 +14,100 @@ from app.schemas.reportes import (
     BalanzaCuentaResponse,
     InventarioValuadoItemResponse,
     InventarioValuadoResponse,
+    LibroDiarioLineaResponse,
+    LibroDiarioResponse,
+    LibroMayorResponse,
     MargenVentasItemResponse,
     MargenVentasResponse,
+    MayorCuentaResponse,
+    MayorMovimientoResponse,
 )
 
 
 class ReportService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def libro_diario(self, *, empresa_id: UUID, fecha_inicio: date | None = None, fecha_fin: date | None = None) -> LibroDiarioResponse:
+        query = (
+            select(AsientoContable, LineaAsientoContable, CuentaContable)
+            .join(LineaAsientoContable, LineaAsientoContable.asiento_id == AsientoContable.id)
+            .join(CuentaContable, CuentaContable.id == LineaAsientoContable.cuenta_id)
+            .where(AsientoContable.empresa_id == empresa_id, CuentaContable.empresa_id == empresa_id)
+            .order_by(AsientoContable.fecha.asc(), AsientoContable.created_at.asc(), CuentaContable.codigo.asc())
+        )
+        if fecha_inicio:
+            query = query.where(AsientoContable.fecha >= fecha_inicio)
+        if fecha_fin:
+            query = query.where(AsientoContable.fecha <= fecha_fin)
+        rows = (await self.db.execute(query)).all()
+        lineas = [
+            LibroDiarioLineaResponse(
+                asiento_id=asiento.id,
+                fecha=asiento.fecha.isoformat(),
+                origen=asiento.origen,
+                referencia=asiento.referencia,
+                cuenta_codigo=cuenta.codigo,
+                cuenta_nombre=cuenta.nombre,
+                descripcion=linea.descripcion,
+                debe=linea.debe,
+                haber=linea.haber,
+            )
+            for asiento, linea, cuenta in rows
+        ]
+        return LibroDiarioResponse(
+            empresa_id=empresa_id,
+            total_debe=sum((linea.debe for linea in lineas), Decimal("0")),
+            total_haber=sum((linea.haber for linea in lineas), Decimal("0")),
+            lineas=lineas,
+        )
+
+    async def libro_mayor(self, *, empresa_id: UUID, cuenta_codigo: str | None = None, fecha_inicio: date | None = None, fecha_fin: date | None = None) -> LibroMayorResponse:
+        query = (
+            select(CuentaContable, AsientoContable, LineaAsientoContable)
+            .join(LineaAsientoContable, LineaAsientoContable.cuenta_id == CuentaContable.id)
+            .join(AsientoContable, AsientoContable.id == LineaAsientoContable.asiento_id)
+            .where(CuentaContable.empresa_id == empresa_id, AsientoContable.empresa_id == empresa_id)
+            .order_by(CuentaContable.codigo.asc(), AsientoContable.fecha.asc(), AsientoContable.created_at.asc())
+        )
+        if cuenta_codigo:
+            query = query.where(CuentaContable.codigo == cuenta_codigo)
+        if fecha_inicio:
+            query = query.where(AsientoContable.fecha >= fecha_inicio)
+        if fecha_fin:
+            query = query.where(AsientoContable.fecha <= fecha_fin)
+        rows = (await self.db.execute(query)).all()
+        cuentas: dict[UUID, MayorCuentaResponse] = {}
+        saldos: dict[UUID, Decimal] = {}
+        for cuenta, asiento, linea in rows:
+            if cuenta.id not in cuentas:
+                cuentas[cuenta.id] = MayorCuentaResponse(
+                    cuenta_id=cuenta.id,
+                    codigo=cuenta.codigo,
+                    nombre=cuenta.nombre,
+                    total_debe=Decimal("0"),
+                    total_haber=Decimal("0"),
+                    saldo_final=Decimal("0"),
+                    movimientos=[],
+                )
+                saldos[cuenta.id] = Decimal("0")
+            saldos[cuenta.id] += linea.debe - linea.haber
+            cuenta_response = cuentas[cuenta.id]
+            cuenta_response.total_debe += linea.debe
+            cuenta_response.total_haber += linea.haber
+            cuenta_response.saldo_final = saldos[cuenta.id]
+            cuenta_response.movimientos.append(
+                MayorMovimientoResponse(
+                    asiento_id=asiento.id,
+                    fecha=asiento.fecha.isoformat(),
+                    referencia=asiento.referencia,
+                    descripcion=linea.descripcion,
+                    debe=linea.debe,
+                    haber=linea.haber,
+                    saldo=saldos[cuenta.id],
+                )
+            )
+        return LibroMayorResponse(empresa_id=empresa_id, cuentas=list(cuentas.values()))
 
     async def balanza_comprobacion(self, *, empresa_id: UUID, fecha_inicio: date | None = None, fecha_fin: date | None = None) -> BalanzaComprobacionResponse:
         query = (

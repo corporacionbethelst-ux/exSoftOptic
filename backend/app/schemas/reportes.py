@@ -54,3 +54,47 @@ class MargenVentasResponse(BaseModel):
     margen_total: Decimal
     margen_porcentaje: Decimal
     ventas: list[MargenVentasItemResponse]
+
+
+class LibroDiarioLineaResponse(BaseModel):
+    asiento_id: UUID
+    fecha: str
+    origen: str
+    referencia: str | None
+    cuenta_codigo: str
+    cuenta_nombre: str
+    descripcion: str | None
+    debe: Decimal
+    haber: Decimal
+
+
+class LibroDiarioResponse(BaseModel):
+    empresa_id: UUID
+    total_debe: Decimal
+    total_haber: Decimal
+    lineas: list[LibroDiarioLineaResponse]
+
+
+class MayorMovimientoResponse(BaseModel):
+    asiento_id: UUID
+    fecha: str
+    referencia: str | None
+    descripcion: str | None
+    debe: Decimal
+    haber: Decimal
+    saldo: Decimal
+
+
+class MayorCuentaResponse(BaseModel):
+    cuenta_id: UUID
+    codigo: str
+    nombre: str
+    total_debe: Decimal
+    total_haber: Decimal
+    saldo_final: Decimal
+    movimientos: list[MayorMovimientoResponse]
+
+
+class LibroMayorResponse(BaseModel):
+    empresa_id: UUID
+    cuentas: list[MayorCuentaResponse]

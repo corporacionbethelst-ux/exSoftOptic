@@ -57,3 +57,47 @@ async def test_margen_ventas_reporta_margen_real(db_session: AsyncSession):
     assert reporte.total_ventas == Decimal("1000")
     assert reporte.total_costo == Decimal("600")
     assert reporte.margen_total == Decimal("400")
+
+
+@pytest.mark.asyncio
+async def test_libro_diario_y_mayor_contable(db_session):
+    from datetime import date
+    from decimal import Decimal
+    import uuid
+
+    from app.models.contabilidad import CuentaContable
+    from app.models.empresa import Empresa
+    from app.services.accounting_engine import AccountingEngine, AccountingLineInput
+    from app.services.report_service import ReportService
+
+    empresa = Empresa(id=uuid.uuid4(), razon_social="Reportes Contables SA", rfc="REP260620AA1", regimen_fiscal="601", codigo_postal="06600")
+    db_session.add(empresa)
+    await db_session.flush()
+    db_session.add_all(
+        [
+            CuentaContable(empresa_id=empresa.id, codigo="102.01", nombre="Bancos", tipo="ACTIVO", naturaleza="DEUDORA"),
+            CuentaContable(empresa_id=empresa.id, codigo="401.01", nombre="Ingresos", tipo="INGRESO", naturaleza="ACREEDORA"),
+        ]
+    )
+    await db_session.flush()
+    await AccountingEngine(db_session).create_journal_entry(
+        empresa_id=empresa.id,
+        fecha=date(2026, 6, 20),
+        descripcion="Venta reporte",
+        origen="TEST",
+        referencia="R-1",
+        lines=[
+            AccountingLineInput("102.01", "Cargo banco", debe=Decimal("250")),
+            AccountingLineInput("401.01", "Ingreso", haber=Decimal("250")),
+        ],
+    )
+
+    service = ReportService(db_session)
+    diario = await service.libro_diario(empresa_id=empresa.id, fecha_inicio=date(2026, 6, 1), fecha_fin=date(2026, 6, 30))
+    mayor = await service.libro_mayor(empresa_id=empresa.id, cuenta_codigo="102.01")
+
+    assert diario.total_debe == Decimal("250")
+    assert diario.total_haber == Decimal("250")
+    assert len(diario.lineas) == 2
+    assert mayor.cuentas[0].codigo == "102.01"
+    assert mayor.cuentas[0].saldo_final == Decimal("250")
