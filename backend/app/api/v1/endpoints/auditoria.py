@@ -24,5 +24,11 @@ async def verificar_cadena_auditoria(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_active_user),
 ):
-    valid = await AuditService(db).verify_chain(empresa_id=current_user.empresa_id)
-    return {"valid": valid}
+    verification = await AuditService(db).verify_chain_details(empresa_id=current_user.empresa_id)
+    return {
+        "valid": verification.valid,
+        "total_events": verification.total_events,
+        "first_invalid_sequence": verification.first_invalid_sequence,
+        "reason": verification.reason,
+        "last_hash": verification.last_hash,
+    }

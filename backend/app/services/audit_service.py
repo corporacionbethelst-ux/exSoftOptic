@@ -1,5 +1,6 @@
 import hashlib
 import json
+from dataclasses import dataclass
 from uuid import UUID
 
 from sqlalchemy import select
@@ -7,6 +8,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.auditoria import AuditoriaEvento
 from app.schemas.auditoria import AuditoriaEventoCreate
+
+
+@dataclass(frozen=True)
+class AuditChainVerification:
+    valid: bool
+    total_events: int
+    first_invalid_sequence: int | None = None
+    reason: str | None = None
+    last_hash: str | None = None
 
 
 class AuditService:
@@ -62,6 +72,10 @@ class AuditService:
         return result.scalars().all()
 
     async def verify_chain(self, *, empresa_id: UUID) -> bool:
+        verification = await self.verify_chain_details(empresa_id=empresa_id)
+        return verification.valid
+
+    async def verify_chain_details(self, *, empresa_id: UUID) -> AuditChainVerification:
         result = await self.db.execute(
             select(AuditoriaEvento)
             .where(AuditoriaEvento.empresa_id == empresa_id)
@@ -69,7 +83,9 @@ class AuditService:
         )
         previous_hash = None
         expected_sequence = 1
+        total_events = 0
         for evento in result.scalars().all():
+            total_events += 1
             expected = self._hash_event(
                 empresa_id=str(evento.empresa_id) if evento.empresa_id else None,
                 usuario_id=str(evento.usuario_id) if evento.usuario_id else None,
@@ -80,11 +96,33 @@ class AuditService:
                 payload=evento.payload,
                 previous_hash=previous_hash,
             )
-            if evento.secuencia != expected_sequence or evento.previous_hash != previous_hash or evento.event_hash != expected:
-                return False
+            if evento.secuencia != expected_sequence:
+                return AuditChainVerification(
+                    valid=False,
+                    total_events=total_events,
+                    first_invalid_sequence=evento.secuencia,
+                    reason=f"secuencia esperada {expected_sequence} y recibida {evento.secuencia}",
+                    last_hash=previous_hash,
+                )
+            if evento.previous_hash != previous_hash:
+                return AuditChainVerification(
+                    valid=False,
+                    total_events=total_events,
+                    first_invalid_sequence=evento.secuencia,
+                    reason="previous_hash no coincide con el hash del evento anterior",
+                    last_hash=previous_hash,
+                )
+            if evento.event_hash != expected:
+                return AuditChainVerification(
+                    valid=False,
+                    total_events=total_events,
+                    first_invalid_sequence=evento.secuencia,
+                    reason="event_hash no coincide con el contenido del evento",
+                    last_hash=previous_hash,
+                )
             previous_hash = evento.event_hash
             expected_sequence += 1
-        return True
+        return AuditChainVerification(valid=True, total_events=total_events, last_hash=previous_hash)
 
     async def _last_event(self, empresa_id: UUID | None) -> tuple[int, str | None]:
         query = select(AuditoriaEvento.secuencia, AuditoriaEvento.event_hash).order_by(AuditoriaEvento.secuencia.desc()).limit(1)
