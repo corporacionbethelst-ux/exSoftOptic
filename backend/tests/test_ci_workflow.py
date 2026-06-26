@@ -8,6 +8,8 @@ def test_backend_ci_workflow_runs_verifier_migrations_and_tests():
     assert "postgres:16" in content
     assert "python scripts/verify_backend.py --skip-pytest" in content
     assert "python scripts/audit_api_security.py" in content
+    assert "python scripts/run_outbox_worker.py --once" in content
+    assert "python scripts/run_outbox_worker.py" in content
     assert "python scripts/verify_migrations.py --roundtrip" in content
     assert "python scripts/verify_backend.py -- -q" in content
     assert "python -m pytest tests/test_e2e_smoke.py -q" in content
@@ -24,6 +26,8 @@ def test_makefile_exposes_backend_verification_targets():
     assert "e2e:" in content
     assert "migrate-verify:" in content
     assert "security-audit:" in content
+    assert "outbox-worker-once:" in content
+    assert "outbox-worker:" in content
     assert "python scripts/verify_backend.py" in content
     assert "python -m pytest tests/test_e2e_smoke.py -q" in content
     assert "python scripts/verify_migrations.py --roundtrip" in content

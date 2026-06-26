@@ -1,4 +1,4 @@
-.PHONY: help install dev verify verify-fast ci e2e migrate-verify security-audit test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev verify verify-fast ci e2e migrate-verify security-audit outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -26,6 +26,12 @@ migrate-verify:  ## Validar migraciones Alembic contra DB de pruebas
 
 security-audit:  ## Auditar endpoints API con dependencias de autenticación/permisos
 	python scripts/audit_api_security.py
+
+outbox-worker-once:  ## Despachar un lote del outbox y salir
+	python scripts/run_outbox_worker.py --once
+
+outbox-worker:  ## Ejecutar worker del outbox en modo continuo
+	python scripts/run_outbox_worker.py
 
 test:  ## Ejecutar tests
 	pytest -v --cov=app
