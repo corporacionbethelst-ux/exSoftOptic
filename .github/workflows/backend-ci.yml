@@ -67,9 +67,9 @@ jobs:
         working-directory: backend
         run: python scripts/verify_backend.py --skip-pytest
 
-      - name: Apply Alembic migrations
+      - name: Verify Alembic migrations from scratch and roundtrip
         working-directory: backend
-        run: alembic upgrade head
+        run: python scripts/verify_migrations.py --roundtrip
 
       - name: Run backend tests
         working-directory: backend
