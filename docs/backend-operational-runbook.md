@@ -23,6 +23,7 @@ Run from `backend/`:
 ```bash
 make verify-fast
 make security-audit
+make config-audit
 make migrate-verify
 make ci
 make e2e
@@ -88,6 +89,23 @@ make security-audit
 
 The audit checks that non-public API endpoints declare authentication and permission dependencies. New endpoints should also record audit events for business-sensitive writes.
 
+
+## 8. Runtime configuration audit
+
+Before deploying with production variables, run:
+
+```bash
+make config-audit
+```
+
+For explicit production validation, use:
+
+```bash
+ENVIRONMENT=production python scripts/validate_runtime_config.py --strict
+```
+
+The validator blocks unsafe defaults, missing provider credentials, non-async PostgreSQL URLs, invalid timeouts and permissive production CORS values.
+
 ## 7. Release checklist
 
 Before tagging or deploying:
@@ -95,6 +113,7 @@ Before tagging or deploying:
 - [ ] `.env` values are production-safe and secrets are managed outside git.
 - [ ] `make verify-fast` passes.
 - [ ] `make security-audit` passes.
+- [ ] `make config-audit` passes with target environment variables.
 - [ ] `make migrate-verify` passes against a disposable database.
 - [ ] `make ci` passes with a real test database.
 - [ ] `make e2e` passes.

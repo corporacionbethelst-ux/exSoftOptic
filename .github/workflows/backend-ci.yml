@@ -71,6 +71,10 @@ jobs:
         working-directory: backend
         run: python scripts/audit_api_security.py
 
+      - name: Validate runtime configuration defaults
+        working-directory: backend
+        run: python scripts/validate_runtime_config.py --environment test
+
       - name: Verify Alembic migrations from scratch and roundtrip
         working-directory: backend
         run: python scripts/verify_migrations.py --roundtrip
