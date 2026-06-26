@@ -106,6 +106,35 @@ ENVIRONMENT=production python scripts/validate_runtime_config.py --strict
 
 The validator blocks unsafe defaults, missing provider credentials, non-async PostgreSQL URLs, invalid timeouts and permissive production CORS values.
 
+
+## 9. Database backup and recovery
+
+Create a PostgreSQL custom-format backup:
+
+```bash
+make db-backup
+```
+
+Restore a backup into the configured `DATABASE_URL`:
+
+```bash
+make db-restore file=./backups/exsoftoptic-backend-YYYYMMDDTHHMMSSZ.dump
+```
+
+Dry-run the generated commands without touching the database:
+
+```bash
+python scripts/manage_database_backup.py backup --dry-run
+python scripts/manage_database_backup.py restore --input ./backups/example.dump --clean --dry-run
+```
+
+Operational expectations:
+
+- Store backups outside the application host and outside git.
+- Encrypt backups at rest in production environments.
+- Test restores against disposable databases before relying on a backup policy.
+- Run `make migrate-verify` after restore validation when schema changes are part of the release.
+
 ## 7. Release checklist
 
 Before tagging or deploying:
@@ -115,6 +144,7 @@ Before tagging or deploying:
 - [ ] `make security-audit` passes.
 - [ ] `make config-audit` passes with target environment variables.
 - [ ] `make migrate-verify` passes against a disposable database.
+- [ ] A recent database backup exists and restore has been tested in a disposable environment.
 - [ ] `make ci` passes with a real test database.
 - [ ] `make e2e` passes.
 - [ ] Outbox worker deployment is configured if integrations are enabled.
