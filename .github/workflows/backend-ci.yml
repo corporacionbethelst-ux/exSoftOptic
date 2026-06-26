@@ -67,6 +67,10 @@ jobs:
         working-directory: backend
         run: python scripts/verify_backend.py --skip-pytest
 
+      - name: Audit API endpoint security guards
+        working-directory: backend
+        run: python scripts/audit_api_security.py
+
       - name: Verify Alembic migrations from scratch and roundtrip
         working-directory: backend
         run: python scripts/verify_migrations.py --roundtrip
