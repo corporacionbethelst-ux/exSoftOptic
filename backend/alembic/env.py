@@ -14,113 +14,32 @@ from app.core.config import settings
 from app.core.database import Base
 
 # ============================================================================
-# IMPORTAR SOLO LOS MODELOS QUE EXISTEN ACTUALMENTE
+# IMPORTAR MODELOS REGISTRADOS PARA AUTOGENERATE
 # ============================================================================
-# A medida que crees más modelos, agrégalos aquí
-
-try:
-    from app.models import empresa
-except ImportError:
-    pass
-
-try:
-    from app.models import sucursal
-except ImportError:
-    pass
-
-try:
-    from app.models import usuario
-except ImportError:
-    pass
-
-try:
-    from app.models import producto
-except ImportError:
-    pass
-
-try:
-    from app.models import cliente
-except ImportError:
-    pass
-
-try:
-    from app.models import proveedor
-except ImportError:
-    pass
-
-try:
-    from app.models import inventario
-except ImportError:
-    pass
-
-try:
-    from app.models import venta
-except ImportError:
-    pass
-
-try:
-    from app.models import compra
-except ImportError:
-    pass
-
-try:
-    from app.models import laboratorio
-except ImportError:
-    pass
-
-try:
-    from app.models import garantia
-except ImportError:
-    pass
-
-try:
-    from app.models import factura
-except ImportError:
-    pass
-
-try:
-    from app.models import contabilidad
-except ImportError:
-    pass
-
-try:
-    from app.models import tesoreria
-except ImportError:
-    pass
-
-try:
-    from app.models import nomina
-except ImportError:
-    pass
-
-try:
-    from app.models import auditoria
-except ImportError:
-    pass
-
-try:
-    from app.models import configuracion
-except ImportError:
-    pass
-
-try:
-    from app.models import crm
-except ImportError:
-    pass
-
-try:
-    from app.models import presupuesto
-except ImportError:
-    pass
-
-from app.models import outbox
-
-from app.models import idempotencia
-
-try:
-    from app.models import activo_fijo
-except ImportError:
-    pass
+# Importar módulos reales de modelos garantiza que Base.metadata contenga todas
+# las tablas al ejecutar `alembic revision --autogenerate` y falla rápido si un
+# modelo deja de existir o cambia de nombre.
+from app.models import (
+    auditoria,
+    compra,
+    configuracion,
+    contabilidad,
+    crm,
+    empresa,
+    factura,
+    garantia,
+    idempotencia,
+    inventario,
+    laboratorio,
+    nomina,
+    outbox,
+    presupuesto,
+    producto,
+    sucursal,
+    tesoreria,
+    usuario,
+    venta,
+)
 
 # ============================================================================
 # CONFIGURACIÓN DE ALEMBIC
