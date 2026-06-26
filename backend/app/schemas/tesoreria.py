@@ -39,6 +39,20 @@ class MovimientoBancarioResponse(MovimientoBancarioCreate):
     conciliado_en: datetime | None
 
 
+class ImportarEstadoBancarioRequest(BaseModel):
+    cuenta_bancaria_id: UUID
+    fecha_desde: date
+    fecha_hasta: date
+    proveedor: str = Field(default="CSV", max_length=40)
+    contenido_csv: str | None = None
+
+
+class ImportarEstadoBancarioResponse(BaseModel):
+    importados: int
+    omitidos: int
+    movimientos: list[MovimientoBancarioResponse]
+
+
 class ConciliarMovimientoRequest(BaseModel):
     movimiento_id: UUID
     asiento_id: UUID

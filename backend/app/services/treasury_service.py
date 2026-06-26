@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.contabilidad import AsientoContable, CuentaContable, LineaAsientoContable
 from app.models.tesoreria import ConciliacionBancaria, CuentaBancaria, MovimientoBancario
-from app.schemas.tesoreria import ConciliarMovimientoRequest, CuentaBancariaCreate, MovimientoBancarioCreate
+from app.schemas.tesoreria import ConciliarMovimientoRequest, CuentaBancariaCreate, ImportarEstadoBancarioRequest, MovimientoBancarioCreate
+from app.services.banking_provider import get_bank_statement_provider
 
 
 class TreasuryService:
@@ -31,6 +32,46 @@ class TreasuryService:
         self.db.add(movimiento)
         await self.db.flush()
         return movimiento
+
+
+    async def importar_estado_bancario(self, *, empresa_id: UUID, payload: ImportarEstadoBancarioRequest) -> tuple[list[MovimientoBancario], int]:
+        cuenta = await self.db.get(CuentaBancaria, payload.cuenta_bancaria_id)
+        if cuenta is None or cuenta.empresa_id != empresa_id:
+            raise ValueError("Cuenta bancaria inexistente")
+        if payload.fecha_desde > payload.fecha_hasta:
+            raise ValueError("Rango de fechas bancario inválido")
+        provider = get_bank_statement_provider(payload.proveedor, csv_content=payload.contenido_csv)
+        statement_movements = await provider.fetch_statement(
+            cuenta.numero_cuenta,
+            date_from=payload.fecha_desde,
+            date_to=payload.fecha_hasta,
+        )
+        imported: list[MovimientoBancario] = []
+        skipped = 0
+        for statement_movement in statement_movements:
+            exists = await self._movimiento_existe(
+                cuenta_bancaria_id=cuenta.id,
+                referencia=statement_movement.referencia,
+                fecha=statement_movement.fecha,
+                monto=statement_movement.monto,
+            )
+            if exists:
+                skipped += 1
+                continue
+            movimiento = MovimientoBancario(
+                empresa_id=empresa_id,
+                cuenta_bancaria_id=cuenta.id,
+                fecha=statement_movement.fecha,
+                referencia=statement_movement.referencia,
+                descripcion=statement_movement.descripcion,
+                monto=statement_movement.monto,
+                tipo=statement_movement.tipo,
+                estado="PENDIENTE",
+            )
+            self.db.add(movimiento)
+            imported.append(movimiento)
+        await self.db.flush()
+        return imported, skipped
 
     async def conciliar_movimiento(self, *, empresa_id: UUID, payload: ConciliarMovimientoRequest) -> ConciliacionBancaria:
         movimiento = await self.db.get(MovimientoBancario, payload.movimiento_id)
@@ -68,3 +109,14 @@ class TreasuryService:
     async def _monto_asiento(self, asiento_id: UUID) -> Decimal:
         result = await self.db.execute(select(func.coalesce(func.sum(LineaAsientoContable.debe), 0)).where(LineaAsientoContable.asiento_id == asiento_id))
         return Decimal(result.scalar_one())
+
+    async def _movimiento_existe(self, *, cuenta_bancaria_id: UUID, referencia: str, fecha, monto: Decimal) -> bool:
+        result = await self.db.execute(
+            select(MovimientoBancario.id).where(
+                MovimientoBancario.cuenta_bancaria_id == cuenta_bancaria_id,
+                MovimientoBancario.referencia == referencia,
+                MovimientoBancario.fecha == fecha,
+                MovimientoBancario.monto == monto,
+            )
+        )
+        return result.scalar_one_or_none() is not None
