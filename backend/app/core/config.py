@@ -40,8 +40,10 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "Sistema Óptica"
     
     # CFDI
+    CFDI_PROVIDER: str = "MOCK"
     CFDI_API_URL: str = ""
     CFDI_API_KEY: str = ""
+    CFDI_TIMEOUT_SECONDS: float = 10.0
     CFDI_CERTIFICATE_PATH: str = ""
     CFDI_KEY_PATH: str = ""
     CFDI_PASSWORD_CERT: str = ""
