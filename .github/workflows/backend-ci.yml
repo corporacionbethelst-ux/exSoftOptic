@@ -74,3 +74,7 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         run: python scripts/verify_backend.py -- -q
+
+      - name: Run API/database smoke E2E tests
+        working-directory: backend
+        run: python -m pytest tests/test_e2e_smoke.py -q

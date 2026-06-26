@@ -1,4 +1,4 @@
-.PHONY: help install dev verify verify-fast ci test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev verify verify-fast ci e2e test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -17,6 +17,9 @@ verify:  ## Validar dependencias, sintaxis y suite pytest
 
 ci:  ## Ejecutar el mismo verificador usado por CI
 	python scripts/verify_backend.py -- -q
+
+e2e:  ## Ejecutar smoke tests end-to-end de API y base de datos
+	python -m pytest tests/test_e2e_smoke.py -q
 
 test:  ## Ejecutar tests
 	pytest -v --cov=app
