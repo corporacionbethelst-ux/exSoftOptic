@@ -26,6 +26,8 @@ REQUIRED_FILES = [
     BACKEND_ROOT / "alembic.ini",
     BACKEND_ROOT / "tests" / "conftest.py",
     REPO_ROOT / "docker-compose.yml",
+    REPO_ROOT / "docker-compose.test.yml",
+    BACKEND_ROOT / ".env.test.example",
     REPO_ROOT / ".github" / "workflows" / "backend-ci.yml",
 ]
 RECOMMENDED_ENV_VARS = ["SECRET_KEY", "DATABASE_URL", "REDIS_URL", "ENVIRONMENT"]

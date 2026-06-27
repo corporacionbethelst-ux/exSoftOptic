@@ -323,3 +323,21 @@ python scripts/check_test_readiness.py --strict
 ```
 
 The preflight verifies Python version, repository files, critical requirement declarations and recommended environment variables without importing FastAPI, SQLAlchemy or test-only packages. Use the non-strict target for local setup guidance and `--strict` when preparing a CI-like environment.
+
+
+## 23. Ephemeral backend test services
+
+Before installing dependencies or running integration tests locally, copy the test env template and start disposable services:
+
+```bash
+cp backend/.env.test.example backend/.env.test.local
+cd backend
+make test-readiness
+make test-services-up
+```
+
+The test compose file exposes isolated ports (`55432`, `56379`, `57017`) and uses `tmpfs` volumes so local verification does not mutate development data. Stop and remove them with:
+
+```bash
+make test-services-down
+```
