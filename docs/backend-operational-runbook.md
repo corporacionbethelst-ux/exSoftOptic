@@ -110,6 +110,35 @@ The validator blocks unsafe defaults, missing provider credentials, non-async Po
 
 
 
+
+## 13. Container deployment hardening
+
+The backend image is built from `backend/Dockerfile` with:
+
+- non-root `app` user;
+- `.dockerignore` to avoid secrets, virtualenvs, logs, uploads and backups in images;
+- `/health` Docker healthcheck;
+- optional startup migrations through `RUN_MIGRATIONS_ON_START=true`;
+- production default command without `--reload`.
+
+Build locally:
+
+```bash
+docker build -t exsoftoptic-backend:local backend
+```
+
+Run with migrations explicitly enabled only when the deployment strategy allows it:
+
+```bash
+docker run --rm -e RUN_MIGRATIONS_ON_START=true --env-file backend/.env exsoftoptic-backend:local
+```
+
+Operational guidance:
+
+- Prefer running migrations as a separate release job for multi-replica deployments.
+- Keep `RUN_MIGRATIONS_ON_START=false` for horizontally scaled application pods.
+- Never bake `.env`, backups, uploads or logs into the image.
+
 ## 12. Performance and load smoke checks
 
 After starting the API locally or in staging, run a lightweight load smoke test:
@@ -202,5 +231,6 @@ Before tagging or deploying:
 - [ ] `make ci` passes with a real test database.
 - [ ] `make e2e` passes.
 - [ ] `make load-smoke` or staging `scripts/load_smoke.py` passes against target health endpoints.
+- [ ] Container image is built without secrets and runs as non-root.
 - [ ] Outbox worker deployment is configured if integrations are enabled.
 - [ ] CFDI and banking provider credentials are configured for the target environment.
