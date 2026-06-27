@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 import httpx
 
 from app.core.config import settings
+from app.core.retry import RetryPolicy, retry_async
 
 
 @dataclass(frozen=True)
@@ -95,11 +96,21 @@ class HttpBankStatementProvider(BankStatementProvider):
                 timeout=self.timeout_seconds,
                 transport=self.transport,
             ) as client:
-                response = await client.get(
-                    f"/accounts/{account_number}/statement",
-                    params={"date_from": date_from.isoformat(), "date_to": date_to.isoformat()},
+                async def send_request():
+                    response = await client.get(
+                        f"/accounts/{account_number}/statement",
+                        params={"date_from": date_from.isoformat(), "date_to": date_to.isoformat()},
+                    )
+                    response.raise_for_status()
+                    return response
+
+                response = await retry_async(
+                    send_request,
+                    RetryPolicy(
+                        attempts=settings.BANKING_RETRY_ATTEMPTS,
+                        retry_exceptions=(httpx.HTTPError,),
+                    ),
                 )
-                response.raise_for_status()
                 payload = response.json()
         except httpx.HTTPStatusError as exc:
             raise BankingProviderError(

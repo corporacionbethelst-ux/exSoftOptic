@@ -5,6 +5,7 @@ from uuid import UUID, NAMESPACE_URL, uuid5
 import httpx
 
 from app.core.config import settings
+from app.core.retry import RetryPolicy, retry_async
 
 
 @dataclass(frozen=True)
@@ -103,8 +104,18 @@ class HttpEInvoicingProvider(EInvoicingProvider):
                 timeout=self.timeout_seconds,
                 transport=self.transport,
             ) as client:
-                response = await client.post(path, json=json_payload)
-                response.raise_for_status()
+                async def send_request():
+                    response = await client.post(path, json=json_payload)
+                    response.raise_for_status()
+                    return response
+
+                response = await retry_async(
+                    send_request,
+                    RetryPolicy(
+                        attempts=settings.CFDI_RETRY_ATTEMPTS,
+                        retry_exceptions=(httpx.HTTPError,),
+                    ),
+                )
                 if not response.content:
                     return {}
                 return response.json()

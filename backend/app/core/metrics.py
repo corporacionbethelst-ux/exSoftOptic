@@ -18,13 +18,16 @@ class RuntimeMetrics:
         self._responses_by_status: dict[int, int] = defaultdict(int)
         self._exceptions_total = 0
         self._latency_total_ms = 0.0
+        self._responses_by_route: dict[tuple[str, str, int], int] = defaultdict(int)
         self._lock = Lock()
 
-    def record_response(self, *, status_code: int, latency_ms: float) -> None:
+    def record_response(self, *, status_code: int, latency_ms: float, method: str | None = None, path: str | None = None) -> None:
         with self._lock:
             self._requests_total += 1
             self._responses_by_status[status_code] += 1
             self._latency_total_ms += latency_ms
+            if method and path:
+                self._responses_by_route[(method, path, status_code)] += 1
 
     def record_exception(self, *, latency_ms: float) -> None:
         with self._lock:
@@ -43,6 +46,10 @@ class RuntimeMetrics:
                 "exceptions_total": self._exceptions_total,
                 "average_latency_ms": round(avg_latency, 3),
                 "latency_total_ms": round(self._latency_total_ms, 3),
+                "responses_by_route": [
+                    {"method": method, "path": path, "status_code": status, "count": count}
+                    for (method, path, status), count in sorted(self._responses_by_route.items())
+                ],
             }
 
     def prometheus_text(self) -> str:
@@ -68,6 +75,15 @@ class RuntimeMetrics:
         ]
         for status_code, count in snapshot["responses_by_status"].items():
             lines.append(f'exsoftoptic_responses_total{{status_code="{status_code}"}} {count}')
+        lines.extend([
+            "# HELP exsoftoptic_route_responses_total Total HTTP responses grouped by method, path and status code",
+            "# TYPE exsoftoptic_route_responses_total counter",
+        ])
+        for route in snapshot["responses_by_route"]:
+            lines.append(
+                "exsoftoptic_route_responses_total"
+                f'{{method="{route["method"]}",path="{route["path"]}",status_code="{route["status_code"]}"}} {route["count"]}'
+            )
         return "\n".join(lines) + "\n"
 
 
@@ -91,6 +107,6 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             raise
 
         latency_ms = (time.perf_counter() - started_at) * 1000
-        self.metrics.record_response(status_code=response.status_code, latency_ms=latency_ms)
+        self.metrics.record_response(status_code=response.status_code, latency_ms=latency_ms, method=request.method, path=request.url.path)
         response.headers["X-Process-Time-ms"] = f"{latency_ms:.3f}"
         return response

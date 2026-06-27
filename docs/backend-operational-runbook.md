@@ -111,6 +111,24 @@ The validator blocks unsafe defaults, missing provider credentials, non-async Po
 
 
 
+
+## 14. Authentication, observability and integration resilience
+
+The backend now includes three additional hardening layers:
+
+- session security helpers for revoking sessions, cleaning up expired sessions and account lockout after repeated failures;
+- per-route runtime metrics in Prometheus output through `exsoftoptic_route_responses_total`;
+- retry policy helpers used by HTTP banking/CFDI provider adapters for transient provider failures.
+
+Recommended operational checks:
+
+```bash
+python scripts/validate_runtime_config.py --environment production --strict
+GET /api/v1/observabilidad/metrics/prometheus
+```
+
+Tune these settings per environment: `MAX_FAILED_LOGIN_ATTEMPTS`, `ACCOUNT_LOCK_MINUTES`, `CFDI_RETRY_ATTEMPTS` and `BANKING_RETRY_ATTEMPTS`.
+
 ## 13. Container deployment hardening
 
 The backend image is built from `backend/Dockerfile` with:

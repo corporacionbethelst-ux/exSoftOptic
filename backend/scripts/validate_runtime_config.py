@@ -62,6 +62,7 @@ class RuntimeConfigValidator:
         api_url = os.getenv(f"{prefix}_API_URL", "")
         api_key = os.getenv(f"{prefix}_API_KEY", "")
         timeout = os.getenv(f"{prefix}_TIMEOUT_SECONDS", "")
+        retry_attempts = os.getenv(f"{prefix}_RETRY_ATTEMPTS", "")
         if provider in {"HTTP", "API"}:
             if not api_url:
                 self._error(f"{prefix}_API_URL es obligatorio cuando {prefix}_PROVIDER={provider}")
@@ -75,6 +76,12 @@ class RuntimeConfigValidator:
                     self._error(f"{prefix}_TIMEOUT_SECONDS debe ser mayor que cero")
             except ValueError:
                 self._error(f"{prefix}_TIMEOUT_SECONDS debe ser numérico")
+        if retry_attempts:
+            try:
+                if int(retry_attempts) < 1:
+                    self._error(f"{prefix}_RETRY_ATTEMPTS debe ser mayor que cero")
+            except ValueError:
+                self._error(f"{prefix}_RETRY_ATTEMPTS debe ser numérico")
         if api_url:
             parsed = urlparse(api_url)
             if self._is_production() and parsed.scheme != "https":
