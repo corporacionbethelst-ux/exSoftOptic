@@ -107,6 +107,24 @@ ENVIRONMENT=production python scripts/validate_runtime_config.py --strict
 The validator blocks unsafe defaults, missing provider credentials, non-async PostgreSQL URLs, invalid timeouts and permissive production CORS values.
 
 
+
+## 10. Observability and SRE checks
+
+Runtime metrics are available for authorized operators in two formats:
+
+```bash
+GET /api/v1/observabilidad/metrics
+GET /api/v1/observabilidad/metrics/prometheus
+```
+
+Use the JSON endpoint for quick operator inspection and the Prometheus text endpoint for internal scrapers. Monitor at least:
+
+- `exsoftoptic_requests_total` for traffic volume.
+- `exsoftoptic_responses_total{status_code=...}` for 4xx/5xx trends.
+- `exsoftoptic_exceptions_total` for unhandled runtime errors.
+- `exsoftoptic_request_latency_average_ms` for latency regressions.
+- Outbox failed/pending events through `/api/v1/outbox` endpoints.
+
 ## 9. Database backup and recovery
 
 Create a PostgreSQL custom-format backup:

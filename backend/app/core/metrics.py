@@ -42,7 +42,33 @@ class RuntimeMetrics:
                 "responses_by_status": {str(status): count for status, count in sorted(self._responses_by_status.items())},
                 "exceptions_total": self._exceptions_total,
                 "average_latency_ms": round(avg_latency, 3),
+                "latency_total_ms": round(self._latency_total_ms, 3),
             }
+
+    def prometheus_text(self) -> str:
+        snapshot = self.snapshot()
+        lines = [
+            "# HELP exsoftoptic_uptime_seconds Backend process uptime in seconds",
+            "# TYPE exsoftoptic_uptime_seconds gauge",
+            f"exsoftoptic_uptime_seconds {snapshot['uptime_seconds']}",
+            "# HELP exsoftoptic_requests_total Total HTTP requests observed by middleware",
+            "# TYPE exsoftoptic_requests_total counter",
+            f"exsoftoptic_requests_total {snapshot['requests_total']}",
+            "# HELP exsoftoptic_exceptions_total Total unhandled exceptions observed by middleware",
+            "# TYPE exsoftoptic_exceptions_total counter",
+            f"exsoftoptic_exceptions_total {snapshot['exceptions_total']}",
+            "# HELP exsoftoptic_request_latency_average_ms Average request latency in milliseconds",
+            "# TYPE exsoftoptic_request_latency_average_ms gauge",
+            f"exsoftoptic_request_latency_average_ms {snapshot['average_latency_ms']}",
+            "# HELP exsoftoptic_request_latency_total_ms Total accumulated request latency in milliseconds",
+            "# TYPE exsoftoptic_request_latency_total_ms counter",
+            f"exsoftoptic_request_latency_total_ms {snapshot['latency_total_ms']}",
+            "# HELP exsoftoptic_responses_total Total HTTP responses grouped by status code",
+            "# TYPE exsoftoptic_responses_total counter",
+        ]
+        for status_code, count in snapshot["responses_by_status"].items():
+            lines.append(f'exsoftoptic_responses_total{{status_code="{status_code}"}} {count}')
+        return "\n".join(lines) + "\n"
 
 
 runtime_metrics = RuntimeMetrics()

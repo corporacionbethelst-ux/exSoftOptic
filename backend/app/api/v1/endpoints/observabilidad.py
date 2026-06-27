@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +15,12 @@ router = APIRouter()
 async def obtener_metricas_runtime():
     """Retorna métricas runtime protegidas por permisos para operación/SRE."""
     return runtime_metrics.snapshot()
+
+
+@router.get("/metrics/prometheus", dependencies=[Depends(require_permissions(["observabilidad.metricas.leer"]))])
+async def obtener_metricas_prometheus():
+    """Retorna métricas en formato Prometheus text exposition para scrapers internos."""
+    return Response(content=runtime_metrics.prometheus_text(), media_type="text/plain; version=0.0.4")
 
 
 @router.get("/readiness")
