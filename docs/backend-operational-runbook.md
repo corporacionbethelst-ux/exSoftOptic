@@ -239,6 +239,7 @@ Operational expectations:
 
 Before tagging or deploying:
 
+- [ ] `make test-readiness` reports no blockers before dependency installation.
 - [ ] `.env` values are production-safe and secrets are managed outside git.
 - [ ] `make verify-fast` passes.
 - [ ] `make security-audit` passes.
@@ -310,3 +311,15 @@ python scripts/cleanup_operational_data.py --empresa-id 00000000-0000-0000-0000-
 ```
 
 The cleanup job removes expired idempotency keys, releases stale `PROCESSING` outbox events back to `PENDING` for retry and deletes old `PUBLISHED` outbox events. Schedule it per tenant during low-traffic windows and monitor the JSON counters it prints for unexpected spikes.
+
+
+## 22. Backend test readiness preflight
+
+Before installing dependencies or starting a full test run, execute the stdlib-only preflight:
+
+```bash
+make test-readiness
+python scripts/check_test_readiness.py --strict
+```
+
+The preflight verifies Python version, repository files, critical requirement declarations and recommended environment variables without importing FastAPI, SQLAlchemy or test-only packages. Use the non-strict target for local setup guidance and `--strict` when preparing a CI-like environment.
