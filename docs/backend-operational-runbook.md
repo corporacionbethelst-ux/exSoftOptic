@@ -108,6 +108,23 @@ The validator blocks unsafe defaults, missing provider credentials, non-async Po
 
 
 
+
+## 11. RBAC permission governance
+
+The backend permission catalog is generated from endpoint `require_permissions([...])` declarations:
+
+```bash
+make permissions-catalog
+python scripts/generate_permission_catalog.py --check
+```
+
+Review [`docs/backend-permissions.md`](backend-permissions.md) when creating or changing roles. Operational rules:
+
+- Avoid assigning `*` outside emergency super-admin roles.
+- Prefer module wildcards such as `ventas.*` only for module owners.
+- Assign granular permissions for cashier, inventory, lab, treasury and reporting users.
+- Re-run the catalog generator after adding endpoints or changing permission names.
+
 ## 10. Observability and SRE checks
 
 Runtime metrics are available for authorized operators in two formats:
@@ -160,6 +177,7 @@ Before tagging or deploying:
 - [ ] `.env` values are production-safe and secrets are managed outside git.
 - [ ] `make verify-fast` passes.
 - [ ] `make security-audit` passes.
+- [ ] `python scripts/generate_permission_catalog.py --check` passes.
 - [ ] `make config-audit` passes with target environment variables.
 - [ ] `make migrate-verify` passes against a disposable database.
 - [ ] A recent database backup exists and restore has been tested in a disposable environment.

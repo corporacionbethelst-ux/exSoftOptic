@@ -1,4 +1,4 @@
-.PHONY: help install dev verify verify-fast ci e2e migrate-verify security-audit config-audit db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev verify verify-fast ci e2e migrate-verify security-audit config-audit permissions-catalog db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -29,6 +29,9 @@ security-audit:  ## Auditar endpoints API con dependencias de autenticación/per
 
 config-audit:  ## Validar configuración runtime antes de despliegue
 	python scripts/validate_runtime_config.py
+
+permissions-catalog:  ## Regenerar catálogo RBAC de permisos declarados en endpoints
+	python scripts/generate_permission_catalog.py
 
 db-backup:  ## Crear backup PostgreSQL custom-format en ./backups
 	python scripts/manage_database_backup.py backup
