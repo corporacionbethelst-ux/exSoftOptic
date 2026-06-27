@@ -1,4 +1,4 @@
-.PHONY: help install dev verify verify-fast ci e2e migrate-verify security-audit config-audit permissions-catalog db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -20,6 +20,9 @@ ci:  ## Ejecutar el mismo verificador usado por CI
 
 e2e:  ## Ejecutar smoke tests end-to-end de API y base de datos
 	python -m pytest tests/test_e2e_smoke.py -q
+
+load-smoke:  ## Ejecutar prueba ligera de carga contra /health local
+	python scripts/load_smoke.py --url http://localhost:8000/health
 
 migrate-verify:  ## Validar migraciones Alembic contra DB de pruebas
 	python scripts/verify_migrations.py --roundtrip
