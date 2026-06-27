@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: optica_postgres_test
+    environment:
+      POSTGRES_USER: optica_user
+      POSTGRES_PASSWORD: optica_password_2026
+      POSTGRES_DB: optica_test
+    ports:
+      - "55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U optica_user -d optica_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: optica_redis_test
+    ports:
+      - "56379:6379"
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongodb-test:
+    image: mongo:7
+    container_name: optica_mongodb_test
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: optica_admin
+      MONGO_INITDB_ROOT_PASSWORD: optica_mongo_2026
+    ports:
+      - "57017:27017"
+    tmpfs:
+      - /data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 10s
+      retries: 10
