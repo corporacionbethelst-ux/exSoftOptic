@@ -1,4 +1,4 @@
-.PHONY: help install dev test-readiness test-services-up test-services-down test-services-logs verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -14,6 +14,9 @@ test-readiness:  ## Validar preparación previa a instalar dependencias y correr
 
 test-services-up:  ## Levantar Postgres/Redis/Mongo efímeros para pruebas backend
 	docker compose -f ../docker-compose.test.yml up -d
+
+test-services-wait:  ## Esperar conectividad TCP de servicios efímeros de pruebas
+	python scripts/wait_for_test_services.py
 
 test-services-down:  ## Detener servicios efímeros de pruebas backend
 	docker compose -f ../docker-compose.test.yml down -v

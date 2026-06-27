@@ -334,6 +334,7 @@ cp backend/.env.test.example backend/.env.test.local
 cd backend
 make test-readiness
 make test-services-up
+make test-services-wait
 ```
 
 The test compose file exposes isolated ports (`55432`, `56379`, `57017`) and uses `tmpfs` volumes so local verification does not mutate development data. Stop and remove them with:
@@ -341,3 +342,6 @@ The test compose file exposes isolated ports (`55432`, `56379`, `57017`) and use
 ```bash
 make test-services-down
 ```
+
+
+Use `make test-services-wait` after `make test-services-up` to block until PostgreSQL, Redis and MongoDB test ports accept TCP connections before installing dependencies or launching migration/test commands.
