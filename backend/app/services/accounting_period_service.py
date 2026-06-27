@@ -28,11 +28,13 @@ class AccountingPeriodService:
         await self.db.flush()
         return periodo
 
-    async def listar_periodos(self, *, empresa_id: UUID) -> list[PeriodoContable]:
+    async def listar_periodos(self, *, empresa_id: UUID, skip: int = 0, limit: int = 100) -> list[PeriodoContable]:
         result = await self.db.execute(
             select(PeriodoContable)
             .where(PeriodoContable.empresa_id == empresa_id)
             .order_by(PeriodoContable.fecha_inicio.desc())
+            .offset(skip)
+            .limit(limit)
         )
         return result.scalars().all()
 

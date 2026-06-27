@@ -55,5 +55,5 @@ async def kardex(producto_id: str | None = None, skip: int = Query(0, ge=0), lim
 
 
 @router.get("/alertas/stock-minimo", response_model=list[InventarioAlertaResponse], dependencies=[Depends(require_permissions(["inventario.alertas.leer"]))])
-async def alertas_stock_minimo(sucursal_id: UUID | None = None, db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
-    return await InventoryAlertService(db).alertas_stock_minimo(empresa_id=current_user.empresa_id, sucursal_id=sucursal_id)
+async def alertas_stock_minimo(sucursal_id: UUID | None = None, skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await InventoryAlertService(db).alertas_stock_minimo(empresa_id=current_user.empresa_id, sucursal_id=sucursal_id, skip=skip, limit=limit)

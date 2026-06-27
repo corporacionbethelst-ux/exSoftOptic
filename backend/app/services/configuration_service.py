@@ -18,8 +18,8 @@ class ConfigurationService:
         await self.db.flush()
         return impuesto
 
-    async def listar_impuestos(self, *, empresa_id: UUID) -> list[Impuesto]:
-        result = await self.db.execute(select(Impuesto).where(Impuesto.empresa_id == empresa_id).order_by(Impuesto.codigo.asc()))
+    async def listar_impuestos(self, *, empresa_id: UUID, skip: int = 0, limit: int = 100) -> list[Impuesto]:
+        result = await self.db.execute(select(Impuesto).where(Impuesto.empresa_id == empresa_id).order_by(Impuesto.codigo.asc()).offset(skip).limit(limit))
         return result.scalars().all()
 
     async def crear_serie(self, *, empresa_id: UUID, payload: SerieFolioCreate) -> SerieFolio:
@@ -76,6 +76,6 @@ class ConfigurationService:
         await self.db.flush()
         return regla
 
-    async def listar_reglas_contables(self, *, empresa_id: UUID) -> list[ReglaContable]:
-        result = await self.db.execute(select(ReglaContable).where(ReglaContable.empresa_id == empresa_id).order_by(ReglaContable.evento.asc()))
+    async def listar_reglas_contables(self, *, empresa_id: UUID, skip: int = 0, limit: int = 100) -> list[ReglaContable]:
+        result = await self.db.execute(select(ReglaContable).where(ReglaContable.empresa_id == empresa_id).order_by(ReglaContable.evento.asc()).offset(skip).limit(limit))
         return result.scalars().all()

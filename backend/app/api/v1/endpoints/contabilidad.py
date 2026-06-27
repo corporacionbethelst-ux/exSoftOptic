@@ -47,8 +47,8 @@ async def crear_periodo_contable(payload: PeriodoContableCreate, db: AsyncSessio
 
 
 @router.get("/periodos", response_model=list[PeriodoContableResponse], dependencies=[Depends(require_permissions(["contabilidad.periodos.leer"]))])
-async def listar_periodos_contables(db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
-    return await AccountingPeriodService(db).listar_periodos(empresa_id=current_user.empresa_id)
+async def listar_periodos_contables(skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await AccountingPeriodService(db).listar_periodos(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
 
 
 @router.patch("/periodos/{periodo_id}/estado", response_model=PeriodoContableResponse, dependencies=[Depends(require_permissions(["contabilidad.periodos.cerrar"]))])

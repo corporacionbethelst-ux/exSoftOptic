@@ -21,8 +21,8 @@ async def crear_impuesto(payload: ImpuestoCreate, db: AsyncSession = Depends(get
 
 
 @router.get("/impuestos", response_model=list[ImpuestoResponse], dependencies=[Depends(require_permissions(["configuracion.impuestos.leer"]))])
-async def listar_impuestos(db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
-    return await ConfigurationService(db).listar_impuestos(empresa_id=current_user.empresa_id)
+async def listar_impuestos(skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await ConfigurationService(db).listar_impuestos(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
 
 
 @router.post("/series", response_model=SerieFolioResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["configuracion.series.crear"]))])
@@ -66,5 +66,5 @@ async def crear_regla_contable(payload: ReglaContableCreate, db: AsyncSession = 
 
 
 @router.get("/reglas-contables", response_model=list[ReglaContableResponse], dependencies=[Depends(require_permissions(["configuracion.reglas_contables.leer"]))])
-async def listar_reglas_contables(db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
-    return await ConfigurationService(db).listar_reglas_contables(empresa_id=current_user.empresa_id)
+async def listar_reglas_contables(skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await ConfigurationService(db).listar_reglas_contables(empresa_id=current_user.empresa_id, skip=skip, limit=limit)

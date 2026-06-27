@@ -44,8 +44,8 @@ async def importar_estado_bancario(payload: ImportarEstadoBancarioRequest, db: A
 
 
 @router.get("/movimientos/pendientes", response_model=list[MovimientoBancarioResponse], dependencies=[Depends(require_permissions(["tesoreria.movimientos.leer"]))])
-async def movimientos_pendientes(cuenta_bancaria_id: UUID | None = Query(None), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
-    return await TreasuryService(db).listar_movimientos_pendientes(empresa_id=current_user.empresa_id, cuenta_bancaria_id=cuenta_bancaria_id)
+async def movimientos_pendientes(cuenta_bancaria_id: UUID | None = Query(None), skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await TreasuryService(db).listar_movimientos_pendientes(empresa_id=current_user.empresa_id, cuenta_bancaria_id=cuenta_bancaria_id, skip=skip, limit=limit)
 
 
 @router.post("/conciliaciones", response_model=ConciliacionBancariaResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["tesoreria.conciliar"]))])

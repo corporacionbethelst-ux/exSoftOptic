@@ -30,3 +30,9 @@ def test_pagination_audit_accepts_list_endpoint_with_limit(tmp_path: Path):
     )
 
     assert find_unpaginated_gets(tmp_path) == []
+
+
+def test_backend_list_endpoints_have_explicit_pagination_limits():
+    backend_dir = Path(__file__).resolve().parents[1]
+
+    assert find_unpaginated_gets(backend_dir / "app" / "api" / "v1" / "endpoints") == []

@@ -20,7 +20,7 @@ class InventoryAlertService:
         self.db = db
         self.policy = policy or InventoryAlertPolicy()
 
-    async def alertas_stock_minimo(self, *, empresa_id: UUID, sucursal_id: UUID | None = None) -> list[InventarioAlertaResponse]:
+    async def alertas_stock_minimo(self, *, empresa_id: UUID, sucursal_id: UUID | None = None, skip: int = 0, limit: int = 100) -> list[InventarioAlertaResponse]:
         query: Select = (
             select(InventarioExistencia, Producto)
             .join(Producto, Producto.id == InventarioExistencia.producto_id)
@@ -35,6 +35,7 @@ class InventoryAlertService:
         )
         if sucursal_id:
             query = query.where(InventarioExistencia.sucursal_id == sucursal_id)
+        query = query.offset(skip).limit(limit)
         rows = (await self.db.execute(query)).all()
         return [self._to_alerta(existencia, producto) for existencia, producto in rows]
 

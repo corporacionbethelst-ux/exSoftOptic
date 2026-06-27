@@ -99,11 +99,11 @@ class TreasuryService:
         await self.db.flush()
         return conciliacion
 
-    async def listar_movimientos_pendientes(self, *, empresa_id: UUID, cuenta_bancaria_id: UUID | None = None) -> list[MovimientoBancario]:
+    async def listar_movimientos_pendientes(self, *, empresa_id: UUID, cuenta_bancaria_id: UUID | None = None, skip: int = 0, limit: int = 100) -> list[MovimientoBancario]:
         query = select(MovimientoBancario).where(MovimientoBancario.empresa_id == empresa_id, MovimientoBancario.estado == "PENDIENTE")
         if cuenta_bancaria_id:
             query = query.where(MovimientoBancario.cuenta_bancaria_id == cuenta_bancaria_id)
-        result = await self.db.execute(query.order_by(MovimientoBancario.fecha.asc(), MovimientoBancario.created_at.asc()))
+        result = await self.db.execute(query.order_by(MovimientoBancario.fecha.asc(), MovimientoBancario.created_at.asc()).offset(skip).limit(limit))
         return result.scalars().all()
 
     async def _monto_asiento(self, asiento_id: UUID) -> Decimal:

@@ -243,6 +243,7 @@ Before tagging or deploying:
 - [ ] `make verify-fast` passes.
 - [ ] `make security-audit` passes.
 - [ ] `python scripts/generate_permission_catalog.py --check` passes.
+- [ ] `python scripts/audit_query_pagination.py --strict` passes with zero unbounded list endpoints.
 - [ ] `make config-audit` passes with target environment variables.
 - [ ] `make migrate-verify` passes against a disposable database.
 - [ ] A recent database backup exists and restore has been tested in a disposable environment.
