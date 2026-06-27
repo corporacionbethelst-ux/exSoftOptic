@@ -252,3 +252,48 @@ Before tagging or deploying:
 - [ ] Container image is built without secrets and runs as non-root.
 - [ ] Outbox worker deployment is configured if integrations are enabled.
 - [ ] CFDI and banking provider credentials are configured for the target environment.
+
+## 17. Query performance and pagination audit
+
+List endpoints must expose an explicit page-size boundary before they are promoted to production traffic. Run the static audit before adding new collection endpoints:
+
+```bash
+make pagination-audit
+python scripts/audit_query_pagination.py --strict
+```
+
+The non-strict Makefile target is intended for discovery during development; use `--strict` in focused hardening branches once known findings have been remediated. Any endpoint that returns a list-like `response_model` should define `limit`, `page_size` or `per_page` and the service implementation should apply a bounded database query.
+
+## 18. Baseline production roles seed
+
+The permission catalog is the source of truth for system roles. Regenerate the seed after endpoint permissions change:
+
+```bash
+make permissions-catalog
+make role-seed
+python scripts/generate_role_seed.py --check
+```
+
+The generated `backend/seeds/roles.base.json` contains emergency `SUPER_ADMIN`, company administrator and module-oriented roles for cashier, inventory, treasury, accounting, laboratory, reporting and operational support. Import it during tenant bootstrap only after reviewing whether module roles need to be reduced for the customer deployment.
+
+## 19. Staging deployment rehearsal
+
+Use the staging compose override to rehearse production-like behavior without development bind mounts or reload flags:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.staging.yml --profile migrations run --rm migration-job
+docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d backend outbox-worker
+```
+
+The staging override expects a prebuilt `exsoftoptic-backend:staging` image, disables automatic migrations on backend startup, and runs migrations through an explicit one-shot profile so rollouts can be controlled and audited.
+
+## 20. OpenAPI contract artifact
+
+Export the current API contract for frontend, QA and partner integration review:
+
+```bash
+make openapi-export
+python scripts/export_openapi.py --output ../docs/openapi.json
+```
+
+Commit or publish the generated artifact when API compatibility needs review. Diff the OpenAPI JSON in pull requests that add, remove or rename endpoints, schemas or status-code responses.

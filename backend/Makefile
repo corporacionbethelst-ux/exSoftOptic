@@ -1,4 +1,4 @@
-.PHONY: help install dev verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed pagination-audit openapi-export db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -35,6 +35,15 @@ config-audit:  ## Validar configuración runtime antes de despliegue
 
 permissions-catalog:  ## Regenerar catálogo RBAC de permisos declarados en endpoints
 	python scripts/generate_permission_catalog.py
+
+role-seed:  ## Regenerar seed JSON de roles base desde el catálogo RBAC
+	python scripts/generate_role_seed.py
+
+pagination-audit:  ## Auditar endpoints GET de listas sin límite de paginación explícito
+	python scripts/audit_query_pagination.py
+
+openapi-export:  ## Exportar contrato OpenAPI JSON a ../docs/openapi.json
+	python scripts/export_openapi.py
 
 db-backup:  ## Crear backup PostgreSQL custom-format en ./backups
 	python scripts/manage_database_backup.py backup

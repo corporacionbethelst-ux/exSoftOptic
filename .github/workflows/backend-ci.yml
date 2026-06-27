@@ -71,6 +71,16 @@ jobs:
         working-directory: backend
         run: python scripts/audit_api_security.py
 
+      - name: Validate permission catalog and base roles
+        working-directory: backend
+        run: |
+          python scripts/generate_permission_catalog.py --check
+          python scripts/generate_role_seed.py --check
+
+      - name: Audit list endpoint pagination
+        working-directory: backend
+        run: python scripts/audit_query_pagination.py
+
       - name: Validate runtime configuration defaults
         working-directory: backend
         run: python scripts/validate_runtime_config.py --environment test
@@ -78,6 +88,10 @@ jobs:
       - name: Verify Alembic migrations from scratch and roundtrip
         working-directory: backend
         run: python scripts/verify_migrations.py --roundtrip
+
+      - name: Export OpenAPI contract
+        working-directory: backend
+        run: python scripts/export_openapi.py
 
       - name: Run backend tests
         working-directory: backend
