@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from contextlib import asynccontextmanager
@@ -6,6 +6,14 @@ import logging
 
 from app.core.config import settings
 from app.api.v1.router import api_router
+from sqlalchemy import text
+
+from app.core.database import async_session_maker
+from app.core.error_handlers import register_exception_handlers
+from app.core.request_context import RequestContextMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.metrics import MetricsMiddleware
+from app.core.rate_limit import RateLimitMiddleware
 
 # Configurar logging
 logging.basicConfig(
@@ -35,6 +43,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Request context, observabilidad y defensas HTTP
+app.add_middleware(RequestContextMiddleware)
+app.add_middleware(MetricsMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
+
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +57,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Registrar handlers de error estándar
+register_exception_handlers(app)
 
 # Incluir routers
 app.include_router(api_router, prefix="/api/v1")
@@ -71,6 +88,19 @@ async def health_check():
         "version": settings.APP_VERSION,
         "environment": settings.ENVIRONMENT
     }
+
+@app.get("/ready", tags=["Health"])
+async def readiness_check():
+    try:
+        async with async_session_maker() as session:
+            await session.execute(text("SELECT 1"))
+    except Exception as exc:
+        logger.exception("Readiness check failed", exc_info=exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Base de datos no disponible",
+        ) from exc
+    return {"status": "ready", "database": "reachable"}
 
 # Root
 @app.get("/", tags=["Root"])
