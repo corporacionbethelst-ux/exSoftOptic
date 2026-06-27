@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from math import pow
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.outbox import OutboxEvent
@@ -108,6 +108,68 @@ class OutboxService:
             event.available_at = datetime.now(timezone.utc) + timedelta(seconds=delay_seconds)
         await self.db.flush()
         return event
+
+
+    async def release_stale_processing(
+        self,
+        *,
+        empresa_id: UUID,
+        older_than: datetime | None = None,
+        limit: int = 500,
+    ) -> int:
+        """Devuelve a PENDING eventos PROCESSING abandonados para reintento seguro."""
+        cutoff = older_than or (datetime.now(timezone.utc) - timedelta(minutes=15))
+        stale_ids_result = await self.db.execute(
+            select(OutboxEvent.id)
+            .where(
+                OutboxEvent.empresa_id == empresa_id,
+                OutboxEvent.status == self.STATUS_PROCESSING,
+                OutboxEvent.locked_at.is_not(None),
+                OutboxEvent.locked_at <= cutoff,
+                OutboxEvent.attempts < OutboxEvent.max_attempts,
+            )
+            .order_by(OutboxEvent.locked_at.asc())
+            .limit(limit)
+        )
+        stale_ids = list(stale_ids_result.scalars().all())
+        if not stale_ids:
+            return 0
+
+        await self.db.execute(
+            update(OutboxEvent)
+            .where(OutboxEvent.id.in_(stale_ids))
+            .values(status=self.STATUS_PENDING, locked_at=None)
+        )
+        await self.db.flush()
+        return len(stale_ids)
+
+    async def cleanup_published(
+        self,
+        *,
+        empresa_id: UUID,
+        older_than: datetime | None = None,
+        limit: int = 500,
+    ) -> int:
+        """Elimina eventos publicados antiguos para mantener compacta la tabla outbox."""
+        cutoff = older_than or (datetime.now(timezone.utc) - timedelta(days=30))
+        published_ids_result = await self.db.execute(
+            select(OutboxEvent.id)
+            .where(
+                OutboxEvent.empresa_id == empresa_id,
+                OutboxEvent.status == self.STATUS_PUBLISHED,
+                OutboxEvent.published_at.is_not(None),
+                OutboxEvent.published_at <= cutoff,
+            )
+            .order_by(OutboxEvent.published_at.asc())
+            .limit(limit)
+        )
+        published_ids = list(published_ids_result.scalars().all())
+        if not published_ids:
+            return 0
+
+        await self.db.execute(delete(OutboxEvent).where(OutboxEvent.id.in_(published_ids)))
+        await self.db.flush()
+        return len(published_ids)
 
     def calculate_retry_delay_seconds(
         self, *, attempts: int, base_delay_seconds: int = 60, max_delay_seconds: int = 3600

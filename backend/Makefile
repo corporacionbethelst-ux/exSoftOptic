@@ -1,4 +1,4 @@
-.PHONY: help install dev verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed pagination-audit openapi-export db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -44,6 +44,9 @@ pagination-audit:  ## Auditar endpoints GET de listas sin límite de paginación
 
 openapi-export:  ## Exportar contrato OpenAPI JSON a ../docs/openapi.json
 	python scripts/export_openapi.py
+
+operational-cleanup:  ## Limpiar idempotency/outbox: make operational-cleanup empresa_id=<uuid>
+	python scripts/cleanup_operational_data.py --empresa-id "$(empresa_id)"
 
 db-backup:  ## Crear backup PostgreSQL custom-format en ./backups
 	python scripts/manage_database_backup.py backup

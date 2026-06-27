@@ -298,3 +298,15 @@ python scripts/export_openapi.py --output ../docs/openapi.json
 ```
 
 Commit or publish the generated artifact when API compatibility needs review. Diff the OpenAPI JSON in pull requests that add, remove or rename endpoints, schemas or status-code responses.
+
+
+## 21. Operational table retention
+
+Run tenant-scoped cleanup jobs to keep idempotency and outbox tables compact without deleting active work:
+
+```bash
+make operational-cleanup empresa_id=00000000-0000-0000-0000-000000000000
+python scripts/cleanup_operational_data.py --empresa-id 00000000-0000-0000-0000-000000000000 --outbox-published-days 30 --processing-timeout-minutes 15
+```
+
+The cleanup job removes expired idempotency keys, releases stale `PROCESSING` outbox events back to `PENDING` for retry and deletes old `PUBLISHED` outbox events. Schedule it per tenant during low-traffic windows and monitor the JSON counters it prints for unexpected spikes.
