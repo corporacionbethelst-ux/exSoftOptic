@@ -1,4 +1,4 @@
-.PHONY: help install dev test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev test-env-init test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -8,6 +8,9 @@ install:  ## Instalar dependencias
 
 dev:  ## Instalar dependencias de desarrollo
 	pip install -r requirements-dev.txt
+
+test-env-init:  ## Crear backend/.env.test.local desde plantilla sin sobrescribir
+	python scripts/init_test_environment.py
 
 test-readiness:  ## Validar preparación previa a instalar dependencias y correr tests
 	python scripts/check_test_readiness.py

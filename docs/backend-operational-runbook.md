@@ -330,8 +330,8 @@ The preflight verifies Python version, repository files, critical requirement de
 Before installing dependencies or running integration tests locally, copy the test env template and start disposable services:
 
 ```bash
-cp backend/.env.test.example backend/.env.test.local
 cd backend
+make test-env-init
 make test-readiness
 make test-services-up
 make test-services-wait
@@ -345,3 +345,6 @@ make test-services-down
 
 
 Use `make test-services-wait` after `make test-services-up` to block until PostgreSQL, Redis and MongoDB test ports accept TCP connections before installing dependencies or launching migration/test commands.
+
+
+`make test-env-init` creates `backend/.env.test.local` from the tracked test template only when the file does not already exist. Use `python scripts/init_test_environment.py --force` only when intentionally resetting local test variables.
