@@ -388,3 +388,16 @@ python scripts/audit_rbac_coverage.py
 ```
 
 The audit verifies permission naming, ensures every endpoint permission is present in `docs/backend-permissions.md`, checks that `ADMIN_EMPRESA` contains the full endpoint permission set and rejects stale or unknown permissions in `backend/seeds/roles.base.json`.
+
+
+## 27. API contract static audit
+
+Run the API contract audit when adding, deleting or renaming endpoint modules/routes:
+
+```bash
+cd backend
+make api-contract-audit
+python scripts/audit_api_contract.py
+```
+
+The audit checks that endpoint modules expose at least one route, every endpoint module is registered in `api_router`, router prefixes/tags are explicit, stale planning markers are removed and no duplicate method/path combination is declared.

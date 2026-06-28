@@ -71,6 +71,10 @@ jobs:
         working-directory: backend
         run: python scripts/audit_api_security.py
 
+      - name: Audit API router contract
+        working-directory: backend
+        run: python scripts/audit_api_contract.py
+
       - name: Validate permission catalog and base roles
         working-directory: backend
         run: |

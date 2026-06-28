@@ -138,19 +138,11 @@ async def forgot_password(
 ):
     """
     Solicitar recuperación de contraseña
-    - Envía email con token de recuperación
-    - No revela si el email existe (seguridad)
+    - Genera token de recuperación para entrega por canal externo
+    - No revela si el email existe ni expone el token en la respuesta
     """
-    token = await auth_service.generate_password_reset_token(db, data.email)
-    
-    # TODO: Enviar email con el token
-    # Por ahora solo retornamos el token para testing
-    if token:
-        return {
-            "message": "Si el email existe, recibirás instrucciones",
-            "token": token  # Solo para desarrollo, remover en producción
-        }
-    
+    await auth_service.generate_password_reset_token(db, data.email)
+
     return {"message": "Si el email existe, recibirás instrucciones"}
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
