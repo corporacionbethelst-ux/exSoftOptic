@@ -362,3 +362,16 @@ make seed-roles empresa_id=00000000-0000-0000-0000-000000000000
 ```
 
 The importer is idempotent: it creates missing roles, updates changed system roles and leaves unchanged roles untouched. Use `--dry-run` before writing to production or staging databases.
+
+
+## 25. Minimal backend smoke dataset
+
+After migrations and baseline roles are ready, create a deterministic company, branch, catalog product and admin-like test user for manual smoke checks:
+
+```bash
+cd backend
+python scripts/seed_test_data.py --dry-run
+make seed-test-data
+```
+
+The seed is idempotent and intentionally small: one company, one principal branch, one category, one brand, one optical frame product, one wildcard test role and one active test user. Use it only in local, QA or disposable staging databases; production tenants should be initialized with customer-approved data instead.
