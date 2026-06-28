@@ -274,6 +274,7 @@ The permission catalog is the source of truth for system roles. Regenerate the s
 make permissions-catalog
 make role-seed
 python scripts/generate_role_seed.py --check
+python scripts/seed_roles.py --empresa-id 00000000-0000-0000-0000-000000000000 --dry-run
 ```
 
 The generated `backend/seeds/roles.base.json` contains emergency `SUPER_ADMIN`, company administrator and module-oriented roles for cashier, inventory, treasury, accounting, laboratory, reporting and operational support. Import it during tenant bootstrap only after reviewing whether module roles need to be reduced for the customer deployment.
@@ -348,3 +349,16 @@ Use `make test-services-wait` after `make test-services-up` to block until Postg
 
 
 `make test-env-init` creates `backend/.env.test.local` from the tracked test template only when the file does not already exist. Use `python scripts/init_test_environment.py --force` only when intentionally resetting local test variables.
+
+
+## 24. Baseline role import
+
+After reviewing `backend/seeds/roles.base.json`, import or update the baseline roles for the target company:
+
+```bash
+cd backend
+python scripts/seed_roles.py --empresa-id 00000000-0000-0000-0000-000000000000 --dry-run
+make seed-roles empresa_id=00000000-0000-0000-0000-000000000000
+```
+
+The importer is idempotent: it creates missing roles, updates changed system roles and leaves unchanged roles untouched. Use `--dry-run` before writing to production or staging databases.
