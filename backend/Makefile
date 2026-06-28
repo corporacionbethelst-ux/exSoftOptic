@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev test-env-init test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed seed-roles seed-test-data rbac-audit pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -8,6 +8,84 @@ install:  ## Instalar dependencias
 
 dev:  ## Instalar dependencias de desarrollo
 	pip install -r requirements-dev.txt
+
+test-env-init:  ## Crear backend/.env.test.local desde plantilla sin sobrescribir
+	python scripts/init_test_environment.py
+
+test-readiness:  ## Validar preparación previa a instalar dependencias y correr tests
+	python scripts/check_test_readiness.py
+
+test-services-up:  ## Levantar Postgres/Redis/Mongo efímeros para pruebas backend
+	docker compose -f ../docker-compose.test.yml up -d
+
+test-services-wait:  ## Esperar conectividad TCP de servicios efímeros de pruebas
+	python scripts/wait_for_test_services.py
+
+test-services-down:  ## Detener servicios efímeros de pruebas backend
+	docker compose -f ../docker-compose.test.yml down -v
+
+test-services-logs:  ## Ver logs de servicios efímeros de pruebas backend
+	docker compose -f ../docker-compose.test.yml logs -f
+
+verify-fast:  ## Validar dependencias y sintaxis sin ejecutar pytest
+	python scripts/verify_backend.py --skip-pytest
+
+verify:  ## Validar dependencias, sintaxis y suite pytest
+	python scripts/verify_backend.py
+
+ci:  ## Ejecutar el mismo verificador usado por CI
+	python scripts/verify_backend.py -- -q
+
+e2e:  ## Ejecutar smoke tests end-to-end de API y base de datos
+	python -m pytest tests/test_e2e_smoke.py -q
+
+load-smoke:  ## Ejecutar prueba ligera de carga contra /health local
+	python scripts/load_smoke.py --url http://localhost:8000/health
+
+migrate-verify:  ## Validar migraciones Alembic contra DB de pruebas
+	python scripts/verify_migrations.py --roundtrip
+
+security-audit:  ## Auditar endpoints API con dependencias de autenticación/permisos
+	python scripts/audit_api_security.py
+
+config-audit:  ## Validar configuración runtime antes de despliegue
+	python scripts/validate_runtime_config.py
+
+permissions-catalog:  ## Regenerar catálogo RBAC de permisos declarados en endpoints
+	python scripts/generate_permission_catalog.py
+
+role-seed:  ## Regenerar seed JSON de roles base desde el catálogo RBAC
+	python scripts/generate_role_seed.py
+
+seed-roles:  ## Importar roles base a DB: make seed-roles empresa_id=<uuid>
+	python scripts/seed_roles.py --empresa-id "$(empresa_id)"
+
+seed-test-data:  ## Importar dataset mínimo para smoke tests backend
+	python scripts/seed_test_data.py
+
+rbac-audit:  ## Auditar consistencia RBAC entre endpoints, catálogo y roles base
+	python scripts/audit_rbac_coverage.py
+
+pagination-audit:  ## Auditar endpoints GET de listas sin límite de paginación explícito
+	python scripts/audit_query_pagination.py
+
+openapi-export:  ## Exportar contrato OpenAPI JSON a ../docs/openapi.json
+	python scripts/export_openapi.py
+
+operational-cleanup:  ## Limpiar idempotency/outbox: make operational-cleanup empresa_id=<uuid>
+	python scripts/cleanup_operational_data.py --empresa-id "$(empresa_id)"
+
+db-backup:  ## Crear backup PostgreSQL custom-format en ./backups
+	python scripts/manage_database_backup.py backup
+
+db-restore:  ## Restaurar backup PostgreSQL: make db-restore file=./backups/archivo.dump
+	python scripts/manage_database_backup.py restore --input "$(file)" --clean
+
+outbox-worker-once:  ## Despachar un lote del outbox y salir
+	python scripts/run_outbox_worker.py --once
+
+outbox-worker:  ## Ejecutar worker del outbox en modo continuo
+	python scripts/run_outbox_worker.py
 
 test:  ## Ejecutar tests
 	pytest -v --cov=app
