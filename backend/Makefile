@@ -1,4 +1,4 @@
-.PHONY: help install dev test-env-init test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed seed-roles seed-test-data pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev test-env-init test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migrate-verify security-audit config-audit permissions-catalog role-seed seed-roles seed-test-data rbac-audit pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -62,6 +62,9 @@ seed-roles:  ## Importar roles base a DB: make seed-roles empresa_id=<uuid>
 
 seed-test-data:  ## Importar dataset mínimo para smoke tests backend
 	python scripts/seed_test_data.py
+
+rbac-audit:  ## Auditar consistencia RBAC entre endpoints, catálogo y roles base
+	python scripts/audit_rbac_coverage.py
 
 pagination-audit:  ## Auditar endpoints GET de listas sin límite de paginación explícito
 	python scripts/audit_query_pagination.py

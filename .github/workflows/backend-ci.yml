@@ -76,6 +76,7 @@ jobs:
         run: |
           python scripts/generate_permission_catalog.py --check
           python scripts/generate_role_seed.py --check
+          python scripts/audit_rbac_coverage.py
 
       - name: Audit list endpoint pagination
         working-directory: backend

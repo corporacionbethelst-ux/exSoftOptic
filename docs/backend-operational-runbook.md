@@ -375,3 +375,16 @@ make seed-test-data
 ```
 
 The seed is idempotent and intentionally small: one company, one principal branch, one category, one brand, one optical frame product, one wildcard test role and one active test user. Use it only in local, QA or disposable staging databases; production tenants should be initialized with customer-approved data instead.
+
+
+## 26. RBAC coverage audit
+
+Run the RBAC consistency audit whenever endpoint permissions, the generated permission catalog or role seeds change:
+
+```bash
+cd backend
+make rbac-audit
+python scripts/audit_rbac_coverage.py
+```
+
+The audit verifies permission naming, ensures every endpoint permission is present in `docs/backend-permissions.md`, checks that `ADMIN_EMPRESA` contains the full endpoint permission set and rejects stale or unknown permissions in `backend/seeds/roles.base.json`.
