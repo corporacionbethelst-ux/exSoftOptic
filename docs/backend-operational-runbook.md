@@ -401,3 +401,46 @@ python scripts/audit_api_contract.py
 ```
 
 The audit checks that endpoint modules expose at least one route, every endpoint module is registered in `api_router`, router prefixes/tags are explicit, stale planning markers are removed and no duplicate method/path combination is declared.
+
+
+## 28. Static migration audit
+
+Run the static migration audit before executing Alembic against any database:
+
+```bash
+cd backend
+make migration-audit
+python scripts/audit_migrations_static.py
+```
+
+The audit checks revision uniqueness, filename/revision consistency, one root migration, one migration head, connected linear graph, `upgrade()`/`downgrade()` presence and destructive `upgrade()` operations such as `drop_table` or `drop_column`.
+
+
+## 29. Backend local verification order before dependency install
+
+Use this order to prepare backend verification professionally before installing dependencies or running the full pytest suite:
+
+```bash
+cd backend
+make test-env-init
+make test-readiness
+make api-contract-audit
+make security-audit
+make rbac-audit
+make pagination-audit
+make migration-audit
+make permissions-catalog
+make role-seed
+SECRET_KEY=change-me-but-long-enough-for-tests DATABASE_URL=postgresql+asyncpg://optica_user:optica_password_2026@localhost:5432/optica_test REDIS_URL=redis://localhost:6379/0 ENVIRONMENT=test python scripts/validate_runtime_config.py --environment test
+```
+
+After dependencies are installed, continue with disposable services and full verification:
+
+```bash
+make test-services-up
+make test-services-wait
+make migrate-verify
+make verify
+make e2e
+make test-services-down
+```

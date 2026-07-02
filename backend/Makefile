@@ -1,4 +1,4 @@
-.PHONY: help install dev test-env-init test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migrate-verify security-audit api-contract-audit config-audit permissions-catalog role-seed seed-roles seed-test-data rbac-audit pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
+.PHONY: help install dev test-env-init test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migration-audit migrate-verify security-audit api-contract-audit config-audit permissions-catalog role-seed seed-roles seed-test-data rbac-audit pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -41,6 +41,9 @@ e2e:  ## Ejecutar smoke tests end-to-end de API y base de datos
 
 load-smoke:  ## Ejecutar prueba ligera de carga contra /health local
 	python scripts/load_smoke.py --url http://localhost:8000/health
+
+migration-audit:  ## Auditar estáticamente grafo y seguridad de migraciones Alembic
+	python scripts/audit_migrations_static.py
 
 migrate-verify:  ## Validar migraciones Alembic contra DB de pruebas
 	python scripts/verify_migrations.py --roundtrip
