@@ -1,3 +1,4 @@
+# Local verification installs the runtime/test dependencies first.
 -r requirements.txt
 
 # Development tools
