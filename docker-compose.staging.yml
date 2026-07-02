@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: exsoftoptic-backend:staging
+    env_file:
+      - ./backend/.env
+    environment:
+      ENVIRONMENT: staging
+      DEBUG: "false"
+      RUN_MIGRATIONS_ON_START: "false"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - optica_network
+    restart: unless-stopped
+
+  outbox-worker:
+    image: exsoftoptic-backend:staging
+    env_file:
+      - ./backend/.env
+    environment:
+      ENVIRONMENT: staging
+      RUN_MIGRATIONS_ON_START: "false"
+    command: ["python", "scripts/run_outbox_worker.py"]
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - optica_network
+    restart: unless-stopped
+
+  migration-job:
+    image: exsoftoptic-backend:staging
+    env_file:
+      - ./backend/.env
+    command: ["alembic", "upgrade", "head"]
+    profiles:
+      - migrations
+    networks:
+      - optica_network
+
+networks:
+  optica_network:
+    external: true
