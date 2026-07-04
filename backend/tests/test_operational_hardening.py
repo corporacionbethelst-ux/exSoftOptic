@@ -35,7 +35,12 @@ async def test_rate_limit_middleware_blocks_after_limit():
 async def test_metrics_middleware_records_latency_and_status():
     metrics = RuntimeMetrics()
     middleware = MetricsMiddleware(app=None, metrics=metrics)
-    request = SimpleNamespace(url=URL("http://testserver/api/v1/ventas"), headers={}, client=None)
+    request = SimpleNamespace(
+        url=URL("http://testserver/api/v1/ventas"),
+        headers={},
+        client=None,
+        method="GET",
+    )
 
     async def call_next(_request):
         return Response("ok", status_code=201)
