@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    MAX_FAILED_LOGIN_ATTEMPTS: int = 5
+    ACCOUNT_LOCK_MINUTES: int = 15
     
     # Database
     DATABASE_URL: str
@@ -40,11 +42,21 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "Sistema Óptica"
     
     # CFDI
+    CFDI_PROVIDER: str = "MOCK"
     CFDI_API_URL: str = ""
     CFDI_API_KEY: str = ""
+    CFDI_TIMEOUT_SECONDS: float = 10.0
+    CFDI_RETRY_ATTEMPTS: int = 3
     CFDI_CERTIFICATE_PATH: str = ""
     CFDI_KEY_PATH: str = ""
     CFDI_PASSWORD_CERT: str = ""
+
+    # Banking integrations
+    BANKING_PROVIDER: str = "CSV"
+    BANKING_API_URL: str = ""
+    BANKING_API_KEY: str = ""
+    BANKING_TIMEOUT_SECONDS: float = 10.0
+    BANKING_RETRY_ATTEMPTS: int = 3
     
     # Storage
     UPLOAD_DIR: str = "./uploads"

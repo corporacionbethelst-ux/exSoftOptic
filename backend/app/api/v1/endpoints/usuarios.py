@@ -243,13 +243,15 @@ async def update_my_profile(
 
 @router.get("/roles", response_model=List[RolResponse])
 async def list_roles(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     current_user: Usuario = Depends(require_permissions(["usuarios.ver"])),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Listar todos los roles
     """
-    roles = await crud_rol.get_multi(db)
+    roles = await crud_rol.get_multi(db, skip=skip, limit=limit)
     return roles
 
 @router.post("/roles", response_model=RolResponse, status_code=status.HTTP_201_CREATED)
