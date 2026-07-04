@@ -8,7 +8,8 @@ sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0; python_version < "3.14"
 asyncpg @ git+https://github.com/MagicStack/asyncpg.git@master; python_version >= "3.14"
 alembic==1.14.0
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.10; python_version < "3.14"
+psycopg @ git+https://github.com/psycopg/psycopg.git; python_version >= "3.14"
 
 # MongoDB
 motor==3.7.0
