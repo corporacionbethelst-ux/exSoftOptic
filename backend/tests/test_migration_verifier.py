@@ -21,7 +21,8 @@ def test_migration_verifier_roundtrip_plan_downgrades_only_when_requested():
     args = [command.args for command in build_plan(roundtrip=True)]
 
     assert ["downgrade", "base"] in args
-    assert args.count(["upgrade", "head"]) == 2
+    # Se cuenta 3 veces: upgrade inicial + downgrade a base + re-upgrade después del roundtrip
+    assert args.count(["upgrade", "head"]) == 3
 
 
 def test_migration_verifier_script_is_wired_in_backend_scripts():
