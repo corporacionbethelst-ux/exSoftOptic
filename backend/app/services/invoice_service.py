@@ -39,17 +39,19 @@ class InvoiceService:
             )
             self.db.add(factura)
             await self.db.flush()
-            for linea in venta.lineas:
-                factura.lineas.append(
-                    FacturaLinea(
-                        producto_id=linea.producto_id,
-                        descripcion=linea.descripcion,
-                        cantidad=linea.cantidad,
-                        precio_unitario=linea.precio_unitario,
-                        descuento=linea.descuento,
-                        importe=linea.importe,
-                    )
+            factura_lineas = [
+                FacturaLinea(
+                    factura_id=factura.id,
+                    producto_id=linea.producto_id,
+                    descripcion=linea.descripcion,
+                    cantidad=linea.cantidad,
+                    precio_unitario=linea.precio_unitario,
+                    descuento=linea.descuento,
+                    importe=linea.importe,
                 )
+                for linea in venta.lineas
+            ]
+            self.db.add_all(factura_lineas)
             await self.db.flush()
             provider = get_einvoicing_provider(factura.proveedor)
             result = await provider.issue_invoice(
@@ -70,7 +72,7 @@ class InvoiceService:
                             descuento=linea.descuento,
                             importe=linea.importe,
                         )
-                        for linea in factura.lineas
+                        for linea in factura_lineas
                     ],
                 )
             )
