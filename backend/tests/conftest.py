@@ -11,7 +11,7 @@ load_dotenv(dotenv_path=local_env_path, override=True)
 
 # AHORA SÍ, el resto de imports que ya tenías
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -28,8 +28,8 @@ os.environ.setdefault(
 os.environ.setdefault("REDIS_URL", "redis://localhost:56379/0")
 
 from app.core.database import Base, get_db  # noqa: E402
-from app.main import app  # noqa: E402
-import app.models  # noqa: F401,E402  # registra todos los modelos en Base.metadata
+from app.main import app as fastapi_app  # noqa: E402
+import app.models as app_models  # noqa: F401,E402  # registra todos los modelos en Base.metadata
 
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
@@ -63,9 +63,10 @@ async def client(db_session):
     async def override_get_db():
         yield db_session
 
-    app.dependency_overrides[get_db] = override_get_db
+    fastapi_app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(app=app, base_url="http://test") as test_client:
+    transport = ASGITransport(app=fastapi_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as test_client:
         yield test_client
 
-    app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.clear()
