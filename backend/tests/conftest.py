@@ -21,8 +21,11 @@ DEFAULT_TEST_DATABASE_URL = (
     "postgresql+asyncpg://optica_user:optica_password_2026@localhost:55432/optica_test"
 )
 os.environ.setdefault("DATABASE_URL", DEFAULT_TEST_DATABASE_URL)
-os.environ.setdefault("MONGODB_URL", "mongodb://optica_admin:optica_mongo_2026@localhost:57017/optica_clinico_test?authSource=admin")
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault(
+    "MONGODB_URL",
+    "mongodb://optica_admin:optica_mongo_2026@localhost:57017/optica_clinico_test?authSource=admin",
+)
+os.environ.setdefault("REDIS_URL", "redis://localhost:56379/0")
 
 from app.core.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
