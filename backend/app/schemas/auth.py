@@ -11,7 +11,7 @@ import re
 class LoginRequest(BaseModel):
     """Schema para login"""
     username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=6, max_length=100)
+    password: str = Field(..., min_length=1, max_length=100)
 
 class LoginResponse(BaseModel):
     """Respuesta del login"""
