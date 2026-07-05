@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 # Defaults seguros para importar la app en pruebas sin depender de un .env local.
 os.environ.setdefault("SECRET_KEY", "test_secret_key_change_me")
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://optica_user:optica_password_2026@localhost:55432/optica_test")
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://optica_user:optica_password_2026@localhost:5432/optica_test")
 os.environ.setdefault("MONGODB_URL", "mongodb://optica_admin:optica_mongo_2026@localhost:57017/optica_clinico_test?authSource=admin")
-os.environ.setdefault("REDIS_URL", "redis://localhost:56379/0")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
 from app.core.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
@@ -16,7 +16,7 @@ import app.models  # noqa: F401,E402  # registra todos los modelos en Base.metad
 
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://optica_user:optica_password_2026@localhost:55432/optica_test",
+    "postgresql+asyncpg://optica_user:optica_password_2026@localhost:5432/optica_test",
 )
 
 engine_test = create_async_engine(TEST_DATABASE_URL, echo=False)
