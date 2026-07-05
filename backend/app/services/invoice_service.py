@@ -122,6 +122,7 @@ class InvoiceService:
             select(Factura)
             .options(selectinload(Factura.lineas), selectinload(Factura.eventos))
             .where(Factura.empresa_id == empresa_id, Factura.id == factura_id)
+            .execution_options(populate_existing=True)
         )
         factura = result.scalar_one_or_none()
         if factura is None:
