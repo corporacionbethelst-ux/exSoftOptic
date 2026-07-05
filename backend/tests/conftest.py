@@ -10,10 +10,10 @@ load_dotenv(dotenv_path=base_env_path, override=True)
 load_dotenv(dotenv_path=local_env_path, override=True)
 
 # AHORA SÍ, el resto de imports que ya tenías
-import asyncio
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 # Defaults seguros para importar la app en pruebas sin depender de un .env local.
 os.environ.setdefault("SECRET_KEY", "test_secret_key_change_me")
@@ -36,7 +36,8 @@ TEST_DATABASE_URL = os.getenv(
     os.getenv("DATABASE_URL", DEFAULT_TEST_DATABASE_URL),
 )
 
-engine_test = create_async_engine(TEST_DATABASE_URL, echo=False)
+# NullPool evita reutilizar conexiones asyncpg entre event loops de pytest-asyncio.
+engine_test = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 async_session_test = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 
 
