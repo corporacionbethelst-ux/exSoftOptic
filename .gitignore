@@ -4,27 +4,26 @@
 .env.local
 .env.*
 
-# Test-specific files
-**/__pycache__/
-*.pyc
-*.pyo
-*.pyd
-**/.pytest_cache/
-**/.coverage
-coverage/
-htmlcov/
-
-# Logs
+# Logs and temporary files
 *.log
+*.tmp
 
-# IDE/Editor files
+# Editor/IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
 
-# OS files
-.DS_Store
-Thumbs.db
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Build artifacts
+dist/
+build/
+target/
 ```
