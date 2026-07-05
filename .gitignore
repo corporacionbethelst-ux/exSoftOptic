@@ -3,6 +3,7 @@
 __pycache__/
 *.o
 *.obj
+*.class
 *.exe
 *.dll
 *.so
@@ -19,11 +20,9 @@ node_modules/
 .mypy_cache/
 .pytest_cache/
 .coverage
-coverage/
 htmlcov/
+coverage/
 .gradle/
-julia-*/
-zig*/
 
 # Logs and temp files
 *.log
@@ -34,13 +33,11 @@ zig*/
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # System files
 .DS_Store
