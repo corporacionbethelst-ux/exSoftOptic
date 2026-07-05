@@ -1,5 +1,13 @@
 import os
+from dotenv import load_dotenv
 
+# CARGA EXPLÍCITA DEL ENTORNO DE TEST ANTES DE CUALQUIER OTRA COSA
+# Ajusta la ruta según donde esté tu .env.test relativo a conftest.py
+env_path = os.path.join(os.path.dirname(__file__), "..", ".env.test")
+load_dotenv(dotenv_path=env_path, override=True)
+
+# AHORA SÍ, el resto de imports que ya tenías
+import asyncio
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
