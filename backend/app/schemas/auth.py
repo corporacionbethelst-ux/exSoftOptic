@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 import re
 
 # ============================================================================
@@ -99,17 +100,16 @@ class UsuarioUpdate(BaseModel):
 
 class UsuarioResponse(UsuarioBase):
     """Respuesta de usuario"""
-    id: str
-    rol_id: str
-    sucursal_id: Optional[str] = None
-    empresa_id: str
+    id: UUID
+    rol_id: UUID
+    sucursal_id: Optional[UUID] = None
+    empresa_id: UUID
     esta_activo: bool
     email_verificado: bool
     ultimo_acceso: Optional[datetime] = None
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UsuarioListResponse(BaseModel):
     """Lista de usuarios con paginación"""
@@ -137,14 +137,13 @@ class RolCreate(RolBase):
     permisos: list[str] = []
 
 class RolResponse(RolBase):
-    id: str
+    id: UUID
     es_sistema: bool
     permisos: list[str] = []
     esta_activo: bool
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Actualizar forward references
 LoginResponse.model_rebuild()
