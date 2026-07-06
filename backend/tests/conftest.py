@@ -2,32 +2,42 @@ import os
 from dotenv import load_dotenv
 
 # CARGA EXPLÍCITA DEL ENTORNO DE TEST ANTES DE CUALQUIER OTRA COSA
-# Ajusta la ruta según donde esté tu .env.test relativo a conftest.py
-env_path = os.path.join(os.path.dirname(__file__), "..", ".env.test")
-load_dotenv(dotenv_path=env_path, override=True)
+# Cargar primero la plantilla versionada y luego overrides locales ignorados por git.
+tests_dir = os.path.dirname(__file__)
+base_env_path = os.path.join(tests_dir, "..", ".env.test")
+local_env_path = os.path.join(tests_dir, "..", ".env.test.local")
+load_dotenv(dotenv_path=base_env_path, override=True)
+load_dotenv(dotenv_path=local_env_path, override=True)
 
 # AHORA SÍ, el resto de imports que ya tenías
-import asyncio
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 # Defaults seguros para importar la app en pruebas sin depender de un .env local.
 os.environ.setdefault("SECRET_KEY", "test_secret_key_change_me")
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://optica_user:optica_password_2026@localhost:5432/optica_test")
-os.environ.setdefault("MONGODB_URL", "mongodb://optica_admin:optica_mongo_2026@localhost:57017/optica_clinico_test?authSource=admin")
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+DEFAULT_TEST_DATABASE_URL = (
+    "postgresql+asyncpg://optica_user:optica_password_2026@localhost:55432/optica_test"
+)
+os.environ.setdefault("DATABASE_URL", DEFAULT_TEST_DATABASE_URL)
+os.environ.setdefault(
+    "MONGODB_URL",
+    "mongodb://optica_admin:optica_mongo_2026@localhost:57017/optica_clinico_test?authSource=admin",
+)
+os.environ.setdefault("REDIS_URL", "redis://localhost:56379/0")
 
 from app.core.database import Base, get_db  # noqa: E402
-from app.main import app  # noqa: E402
-import app.models  # noqa: F401,E402  # registra todos los modelos en Base.metadata
+from app.main import app as fastapi_app  # noqa: E402
+import app.models as app_models  # noqa: F401,E402  # registra todos los modelos en Base.metadata
 
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://optica_user:optica_password_2026@localhost:5432/optica_test",
+    os.getenv("DATABASE_URL", DEFAULT_TEST_DATABASE_URL),
 )
 
-engine_test = create_async_engine(TEST_DATABASE_URL, echo=False)
+# NullPool evita reutilizar conexiones asyncpg entre event loops de pytest-asyncio.
+engine_test = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 async_session_test = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -53,9 +63,10 @@ async def client(db_session):
     async def override_get_db():
         yield db_session
 
-    app.dependency_overrides[get_db] = override_get_db
+    fastapi_app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(app=app, base_url="http://test") as test_client:
+    transport = ASGITransport(app=fastapi_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as test_client:
         yield test_client
 
-    app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.clear()
