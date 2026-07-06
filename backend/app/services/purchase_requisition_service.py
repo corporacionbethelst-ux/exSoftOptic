@@ -29,20 +29,23 @@ class PurchaseRequisitionService:
         )
         self.db.add(solicitud)
         await self.db.flush()
+        lineas = []
         for alerta in alertas:
             producto = await self.db.get(Producto, alerta.producto_id)
             objetivo = Decimal(producto.punto_reorden or 0) if producto and producto.punto_reorden else alerta.stock_minimo
             cantidad_sugerida = max(objetivo - alerta.cantidad_actual, Decimal("0"))
             if cantidad_sugerida <= 0:
                 cantidad_sugerida = alerta.stock_minimo - alerta.cantidad_actual
-            solicitud.lineas.append(
+            lineas.append(
                 SolicitudCompraLinea(
+                    solicitud_id=solicitud.id,
                     producto_id=alerta.producto_id,
                     cantidad_sugerida=cantidad_sugerida,
                     costo_estimado=Decimal(producto.costo_estandar or 0) if producto else Decimal("0"),
                     motivo=alerta.mensaje,
                 )
             )
+        self.db.add_all(lineas)
         await self.db.flush()
         return await self.obtener_solicitud(empresa_id=empresa_id, solicitud_id=solicitud.id)
 
