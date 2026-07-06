@@ -104,6 +104,7 @@ class WarrantyService:
             select(Garantia)
             .options(selectinload(Garantia.reclamaciones), selectinload(Garantia.eventos))
             .where(Garantia.empresa_id == empresa_id, Garantia.id == garantia_id)
+            .execution_options(populate_existing=True)
         )
         garantia = result.scalar_one_or_none()
         if garantia is None:
