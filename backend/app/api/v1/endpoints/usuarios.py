@@ -44,11 +44,11 @@ async def create_user(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No puedes crear usuarios con diferentes roles"
             )
-        
+
         usuario = await crud_usuario.create_with_password(db, obj_in=user_in)
         usuario_completo = await crud_usuario.get_with_rol(db, str(usuario.id))
         return usuario_completo
-    
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -59,9 +59,9 @@ async def create_user(
 async def list_users(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
-    rol_id: Optional[str] = None,
-    sucursal_id: Optional[str] = None,
+    search: Optional[str] = Query(None, min_length=1, max_length=100),
+    rol_id: Optional[UUID] = None,
+    sucursal_id: Optional[UUID] = None,
     esta_activo: Optional[bool] = None,
     current_user: Usuario = Depends(require_permissions(["usuarios.ver"])),
     db: AsyncSession = Depends(get_db)
@@ -71,141 +71,35 @@ async def list_users(
     - Requiere permiso: usuarios.ver
     """
     skip = (page - 1) * per_page
-    
+
     filters = {}
     if rol_id:
-        filters["rol_id"] = UUID(rol_id)
+        filters["rol_id"] = rol_id
     if sucursal_id:
-        filters["sucursal_id"] = UUID(sucursal_id)
+        filters["sucursal_id"] = sucursal_id
     if esta_activo is not None:
         filters["esta_activo"] = esta_activo
-    
+
     # Si no es admin global, solo ver usuarios de su sucursal
     if current_user.sucursal_id:
         filters["sucursal_id"] = current_user.sucursal_id
-    
+
     usuarios = await crud_usuario.get_multi_with_rol(
         db,
         skip=skip,
         limit=per_page,
-        filters=filters
+        filters=filters,
+        search=search,
     )
-    
-    total = await crud_usuario.count(db, filters=filters)
-    
+
+    total = await crud_usuario.count_with_filters(db, filters=filters, search=search)
+
     return UsuarioListResponse(
         total=total,
         page=page,
         per_page=per_page,
         users=usuarios
     )
-
-@router.get("/{user_id}", response_model=UsuarioResponse)
-async def get_user(
-    user_id: str,
-    current_user: Usuario = Depends(require_permissions(["usuarios.ver"])),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Obtener usuario por ID
-    - Requiere permiso: usuarios.ver
-    """
-    usuario = await crud_usuario.get_with_rol(db, user_id)
-    
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuario no encontrado"
-        )
-    
-    # Verificar permisos de sucursal
-    if current_user.sucursal_id and usuario.sucursal_id != current_user.sucursal_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes acceso a este usuario"
-        )
-    
-    return usuario
-
-@router.put("/{user_id}", response_model=UsuarioResponse)
-async def update_user(
-    user_id: str,
-    user_in: UsuarioUpdate,
-    current_user: Usuario = Depends(require_permissions(["usuarios.editar"])),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Actualizar usuario
-    - Requiere permiso: usuarios.editar
-    """
-    usuario = await crud_usuario.get(db, user_id)
-    
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuario no encontrado"
-        )
-    
-    # Verificar permisos de sucursal
-    if current_user.sucursal_id and usuario.sucursal_id != current_user.sucursal_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No puedes editar usuarios de otras sucursales"
-        )
-    
-    # Verificar que no se desactive a sí mismo
-    if user_in.esta_activo == False and str(usuario.id) == str(current_user.id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No puedes desactivar tu propia cuenta"
-        )
-    
-    # Verificar email único si se cambia
-    if user_in.email and user_in.email != usuario.email:
-        if await crud_usuario.get_by_email(db, user_in.email):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El email ya está en uso"
-            )
-    
-    usuario_actualizado = await crud_usuario.update(db, db_obj=usuario, obj_in=user_in)
-    usuario_completo = await crud_usuario.get_with_rol(db, str(usuario_actualizado.id))
-    return usuario_completo
-
-@router.delete("/{user_id}", status_code=status.HTTP_200_OK)
-async def delete_user(
-    user_id: str,
-    current_user: Usuario = Depends(require_permissions(["usuarios.eliminar"])),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Eliminar usuario (soft delete)
-    - Requiere permiso: usuarios.eliminar
-    """
-    usuario = await crud_usuario.get(db, user_id)
-    
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuario no encontrado"
-        )
-    
-    # No puede eliminarse a sí mismo
-    if str(usuario.id) == str(current_user.id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No puedes eliminar tu propia cuenta"
-        )
-    
-    # No puede eliminar super admin
-    if usuario.rol and usuario.rol.nombre == "SUPER_ADMIN":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No puedes eliminar un super administrador"
-        )
-    
-    await crud_usuario.delete(db, id=user_id)
-    return {"message": "Usuario eliminado exitosamente"}
 
 # ============================================================================
 # PERFIL DE USUARIO (Usuario actual)
@@ -271,23 +165,130 @@ async def create_role(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El nombre del rol ya existe"
         )
-    
+
     rol = await crud_rol.create(db, obj_in=role_in)
     return rol
 
 @router.get("/roles/{role_id}", response_model=RolResponse)
 async def get_role(
-    role_id: str,
+    role_id: UUID,
     current_user: Usuario = Depends(require_permissions(["usuarios.ver"])),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Obtener rol por ID
     """
-    rol = await crud_rol.get(db, role_id)
+    rol = await crud_rol.get(db, str(role_id))
     if not rol:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Rol no encontrado"
         )
     return rol
+
+@router.get("/{user_id}", response_model=UsuarioResponse)
+async def get_user(
+    user_id: UUID,
+    current_user: Usuario = Depends(require_permissions(["usuarios.ver"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Obtener usuario por ID
+    - Requiere permiso: usuarios.ver
+    """
+    usuario = await crud_usuario.get_with_rol(db, str(user_id))
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    # Verificar permisos de sucursal
+    if current_user.sucursal_id and usuario.sucursal_id != current_user.sucursal_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes acceso a este usuario"
+        )
+
+    return usuario
+
+@router.put("/{user_id}", response_model=UsuarioResponse)
+async def update_user(
+    user_id: UUID,
+    user_in: UsuarioUpdate,
+    current_user: Usuario = Depends(require_permissions(["usuarios.editar"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Actualizar usuario
+    - Requiere permiso: usuarios.editar
+    """
+    usuario = await crud_usuario.get(db, str(user_id))
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    # Verificar permisos de sucursal
+    if current_user.sucursal_id and usuario.sucursal_id != current_user.sucursal_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes editar usuarios de otras sucursales"
+        )
+
+    # Verificar que no se desactive a sí mismo
+    if user_in.esta_activo == False and str(usuario.id) == str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes desactivar tu propia cuenta"
+        )
+
+    # Verificar email único si se cambia
+    if user_in.email and user_in.email != usuario.email:
+        if await crud_usuario.get_by_email(db, user_in.email):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El email ya está en uso"
+            )
+
+    usuario_actualizado = await crud_usuario.update(db, db_obj=usuario, obj_in=user_in)
+    usuario_completo = await crud_usuario.get_with_rol(db, str(usuario_actualizado.id))
+    return usuario_completo
+
+@router.delete("/{user_id}", status_code=status.HTTP_200_OK)
+async def delete_user(
+    user_id: UUID,
+    current_user: Usuario = Depends(require_permissions(["usuarios.eliminar"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Eliminar usuario (soft delete)
+    - Requiere permiso: usuarios.eliminar
+    """
+    usuario = await crud_usuario.get(db, str(user_id))
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    # No puede eliminarse a sí mismo
+    if str(usuario.id) == str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes eliminar tu propia cuenta"
+        )
+
+    # No puede eliminar super admin
+    if usuario.rol and usuario.rol.nombre == "SUPER_ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes eliminar un super administrador"
+        )
+
+    await crud_usuario.delete(db, id=str(user_id))
+    return {"message": "Usuario eliminado exitosamente"}

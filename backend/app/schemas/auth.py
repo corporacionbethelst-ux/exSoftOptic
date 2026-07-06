@@ -104,11 +104,17 @@ class UsuarioResponse(UsuarioBase):
     rol_id: UUID
     sucursal_id: Optional[UUID] = None
     empresa_id: UUID
-    esta_activo: bool
-    email_verificado: bool
+    esta_activo: bool = True
+    email_verificado: bool = False
     ultimo_acceso: Optional[datetime] = None
     created_at: datetime
     
+    @field_validator("esta_activo", "email_verificado", mode="before")
+    def normalizar_booleanos_nulos(cls, value, info):
+        if value is None:
+            return True if info.field_name == "esta_activo" else False
+        return value
+
     model_config = ConfigDict(from_attributes=True)
 
 class UsuarioListResponse(BaseModel):
@@ -140,7 +146,7 @@ class RolResponse(RolBase):
     id: UUID
     es_sistema: bool
     permisos: list[str] = []
-    esta_activo: bool
+    esta_activo: bool = Field(default=True, validation_alias="is_active")
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
