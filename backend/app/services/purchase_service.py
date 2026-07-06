@@ -34,10 +34,12 @@ class PurchaseService:
         )
         self.db.add(orden)
         await self.db.flush()
+        orden_lineas = []
         for linea in payload.lineas:
             producto = await self._get_producto(empresa_id, linea.producto_id)
-            orden.lineas.append(
+            orden_lineas.append(
                 OrdenCompraLinea(
+                    orden_id=orden.id,
                     producto_id=producto.id,
                     descripcion=linea.descripcion or producto.nombre,
                     cantidad=linea.cantidad,
@@ -46,8 +48,9 @@ class PurchaseService:
                     importe=linea.importe,
                 )
             )
+        self.db.add_all(orden_lineas)
         await self.db.flush()
-        return orden
+        return await self.obtener_orden(empresa_id=empresa_id, orden_id=orden.id)
 
     async def aprobar_orden(self, *, empresa_id: UUID, orden_id: UUID) -> OrdenCompra:
         orden = await self._get_orden_for_update(empresa_id, orden_id)
@@ -75,6 +78,7 @@ class PurchaseService:
             self.db.add(recepcion)
             await self.db.flush()
             total = Decimal("0")
+            recepcion_lineas = []
             for item in payload.lineas:
                 linea = lineas_por_id.get(item.orden_linea_id)
                 if linea is None:
@@ -96,8 +100,9 @@ class PurchaseService:
                 )
                 linea.cantidad_recibida += item.cantidad
                 total += importe
-                recepcion.lineas.append(
+                recepcion_lineas.append(
                     RecepcionCompraLinea(
+                        recepcion_id=recepcion.id,
                         orden_linea_id=linea.id,
                         producto_id=linea.producto_id,
                         cantidad=item.cantidad,
@@ -107,6 +112,7 @@ class PurchaseService:
                         numero_serie=item.numero_serie,
                     )
                 )
+            self.db.add_all(recepcion_lineas)
             if total <= 0:
                 raise ValueError("La recepción debe tener importe positivo")
             asiento = await AccountingEngine(self.db).handle_compra_recibida(
