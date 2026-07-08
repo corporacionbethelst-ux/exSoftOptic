@@ -160,7 +160,11 @@ class LabService:
     async def listar_ordenes(self, *, empresa_id: UUID, skip: int = 0, limit: int = 50) -> list[OrdenLaboratorio]:
         result = await self.db.execute(
             select(OrdenLaboratorio)
-            .options(selectinload(OrdenLaboratorio.etapas))
+            .options(
+                selectinload(OrdenLaboratorio.etapas),
+                selectinload(OrdenLaboratorio.consumos),
+                selectinload(OrdenLaboratorio.controles_calidad),
+            )
             .where(OrdenLaboratorio.empresa_id == empresa_id)
             .order_by(OrdenLaboratorio.created_at.desc())
             .offset(skip)
