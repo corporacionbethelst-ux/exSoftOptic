@@ -1,11 +1,11 @@
 import { DataState } from '../../components/DataState';
 import { StatusBadge } from '../../components/StatusBadge';
-import { api } from '../../lib/api';
-import { dateTime } from '../../lib/format';
-import { useApiResource } from '../../lib/useApiResource';
+import { usersService } from '../../services';
+import { dateTime } from '../../utils/format';
+import { useApiResource } from '../../hooks/useApiResource';
 
 export function UsersPage() {
-  const users = useApiResource(api.users);
+  const users = useApiResource(usersService.list);
   return (
     <section className="page-stack">
       <div className="page-header"><div><p className="eyebrow">Seguridad</p><h1>Usuarios</h1><p className="muted">Usuarios y roles cargados desde el backend.</p></div></div>

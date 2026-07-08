@@ -1,11 +1,11 @@
 import { DataState } from '../../components/DataState';
 import { StatusBadge } from '../../components/StatusBadge';
-import { api } from '../../lib/api';
-import { money } from '../../lib/format';
-import { useApiResource } from '../../lib/useApiResource';
+import { catalogService } from '../../services';
+import { money } from '../../utils/format';
+import { useApiResource } from '../../hooks/useApiResource';
 
 export function ProductsPage() {
-  const products = useApiResource(api.products);
+  const products = useApiResource(catalogService.products);
   const items = products.data?.items ?? products.data?.productos ?? [];
   return (
     <section className="page-stack">

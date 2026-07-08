@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { api, clearStoredTokens, getStoredTokens, LoginResponse, storeTokens, Usuario } from '../../lib/api';
+import type { LoginResponse, Usuario } from '../../types/auth';
+import { authService } from '../../services';
+import { clearStoredTokens, getStoredTokens, storeTokens } from '../../services/storage/tokenStorage';
 
 type AuthContextValue = {
   user: Usuario | null;
@@ -15,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<LoginResponse | null>(() => getStoredTokens());
 
   const login = useCallback(async (username: string, password: string) => {
-    const response = await api.login({ username, password });
+    const response = await authService.login({ username, password });
     storeTokens(response);
     setSession(response);
   }, []);

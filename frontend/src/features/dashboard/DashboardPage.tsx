@@ -2,16 +2,16 @@ import { Activity, Boxes, FlaskConical, ShoppingCart, Users } from 'lucide-react
 import { DataState } from '../../components/DataState';
 import { MetricCard } from '../../components/MetricCard';
 import { StatusBadge } from '../../components/StatusBadge';
-import { api } from '../../lib/api';
-import { money } from '../../lib/format';
-import { useApiResource } from '../../lib/useApiResource';
+import { catalogService, inventoryService, labService, salesService, usersService } from '../../services';
+import { money } from '../../utils/format';
+import { useApiResource } from '../../hooks/useApiResource';
 
 export function DashboardPage() {
-  const users = useApiResource(api.users);
-  const products = useApiResource(api.products);
-  const sales = useApiResource(api.sales);
-  const lab = useApiResource(api.labOrders);
-  const kardex = useApiResource(api.kardex);
+  const users = useApiResource(usersService.list);
+  const products = useApiResource(catalogService.products);
+  const sales = useApiResource(salesService.list);
+  const lab = useApiResource(labService.orders);
+  const kardex = useApiResource(inventoryService.kardex);
   const isLoading = users.loading || products.loading || sales.loading || lab.loading || kardex.loading;
   const error = users.error ?? products.error ?? sales.error ?? lab.error ?? kardex.error;
   const productItems = products.data?.items ?? products.data?.productos ?? [];

@@ -9,6 +9,26 @@ Aplicación web administrativa para consumir el backend de ExSoftOptic. Está pe
 - CSS propio sin dependencia de UI externa
 - Cliente API con `fetch` y token Bearer persistido en `localStorage`
 
+
+## Arquitectura de carpetas
+
+```text
+src/
+  app/             # bootstrap, providers y raíz de aplicación
+  components/      # componentes UI reutilizables y agnósticos del dominio
+  config/          # lectura de variables de entorno y configuración runtime
+  features/        # pantallas y módulos orientados al negocio
+  hooks/           # hooks compartidos para estado asíncrono y UI
+  layout/          # shell autenticado, sidebar, topbar y layouts base
+  routes/          # definición de navegación y resolución de páginas
+  services/        # clientes por dominio, HTTP client y storage
+  styles/          # estilos globales/tokens visuales
+  types/           # contratos TypeScript por dominio
+  utils/           # helpers puros de formato y transformación
+```
+
+La intención es mantener separación clara entre UI, casos de uso, contratos, transporte HTTP y configuración para poder crecer hacia módulos CRUD completos sin mezclar responsabilidades.
+
 ## Variables de entorno
 
 Copia el ejemplo si necesitas apuntar a otra URL de backend:

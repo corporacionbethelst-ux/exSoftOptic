@@ -1,11 +1,11 @@
 import { DataState } from '../../components/DataState';
 import { StatusBadge } from '../../components/StatusBadge';
-import { api } from '../../lib/api';
-import { money } from '../../lib/format';
-import { useApiResource } from '../../lib/useApiResource';
+import { salesService } from '../../services';
+import { money } from '../../utils/format';
+import { useApiResource } from '../../hooks/useApiResource';
 
 export function SalesPage() {
-  const sales = useApiResource(api.sales);
+  const sales = useApiResource(salesService.list);
   return (
     <section className="page-stack">
       <div className="page-header"><div><p className="eyebrow">Operación</p><h1>Ventas</h1><p className="muted">Ventas confirmadas y borradores creados en backend.</p></div></div>

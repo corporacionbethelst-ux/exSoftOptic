@@ -1,12 +1,13 @@
 import { FormEvent, useState } from 'react';
 import { Glasses } from 'lucide-react';
-import { ApiError } from '../../lib/api';
+import { ApiError } from '../../services';
+import { env } from '../../config/env';
 import { useAuth } from './AuthContext';
 
 export function LoginPage() {
   const { login } = useAuth();
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('Admin123!');
+  const [username, setUsername] = useState(env.demoUsername);
+  const [password, setPassword] = useState(env.demoPassword);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
