@@ -34,8 +34,14 @@ class BudgetService:
         )
         self.db.add(presupuesto)
         await self.db.flush()
-        for linea in payload.lineas:
-            presupuesto.lineas.append(PresupuestoLinea(cuenta_codigo=linea.cuenta_codigo, monto=linea.monto))
+        self.db.add_all(
+            PresupuestoLinea(
+                presupuesto_id=presupuesto.id,
+                cuenta_codigo=linea.cuenta_codigo,
+                monto=linea.monto,
+            )
+            for linea in payload.lineas
+        )
         await self.db.flush()
         return await self.obtener_presupuesto(empresa_id=empresa_id, presupuesto_id=presupuesto.id)
 
