@@ -93,3 +93,11 @@ th { color: #475569; font-size: .82rem; text-transform: uppercase; letter-spacin
   .page-header { align-items: flex-start; flex-direction: column; }
   .login-card { padding: 1.4rem; }
 }
+.page-actions, .panel-actions { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
+.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.panel-heading h2 { margin-bottom: .25rem; }
+.compact { margin-bottom: 0; font-size: .9rem; }
+.inline-state, .empty-state { border: 1px dashed var(--border); border-radius: 16px; padding: 1rem; }
+.inline-state.error { background: #fef2f2; color: #991b1b; border-style: solid; border-color: #fecaca; }
+.empty-state { display: grid; gap: .35rem; background: #f8fafc; color: #334155; }
+.empty-state span { color: var(--muted); }
