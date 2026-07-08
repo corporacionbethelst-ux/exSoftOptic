@@ -10,14 +10,19 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-from sqlalchemy import delete, select
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 DEMO_NAMESPACE = "https://exsoftoptic.local/demo-seed/v1"
 DEMO_EMPRESA_RFC = "ODE260618ABC"
@@ -57,6 +62,8 @@ def normalize(value: Any) -> Any:
 
 
 async def upsert(session, model, lookup: dict[str, Any], values: dict[str, Any], counters: dict[str, int]):
+    from sqlalchemy import select
+
     result = await session.execute(
         select(model).where(*[getattr(model, field) == value for field, value in lookup.items()])
     )
@@ -79,12 +86,16 @@ async def upsert(session, model, lookup: dict[str, Any], values: dict[str, Any],
 
 
 async def delete_demo_rows(session, model, ids: Iterable[UUID]) -> None:
+    from sqlalchemy import delete
+
     ids = list(ids)
     if ids:
         await session.execute(delete(model).where(model.id.in_(ids)))
 
 
 async def load_context(session) -> DemoContext:
+    from sqlalchemy import select
+
     from app.models.empresa import Empresa
     from app.models.sucursal import Sucursal
     from app.models.usuario import Usuario
