@@ -41,6 +41,7 @@ class SalesReturnService:
             inventory = InventoryService(self.db)
             subtotal = Decimal("0")
             costo_total = Decimal("0")
+            devolucion_lineas = []
             for item in payload.lineas:
                 linea = lineas_por_id.get(item.venta_linea_id)
                 if linea is None:
@@ -65,8 +66,9 @@ class SalesReturnService:
                     )
                 subtotal += importe
                 costo_total += costo_linea
-                devolucion.lineas.append(
+                devolucion_lineas.append(
                     DevolucionVentaLinea(
+                        devolucion_id=devolucion.id,
                         venta_linea_id=linea.id,
                         producto_id=linea.producto_id,
                         cantidad=item.cantidad,
@@ -74,6 +76,7 @@ class SalesReturnService:
                         costo_total=costo_linea,
                     )
                 )
+            self.db.add_all(devolucion_lineas)
             if subtotal <= 0:
                 raise ValueError("La devolución debe tener importe positivo")
             impuestos = (venta.impuestos / venta.subtotal) * subtotal if venta.subtotal else Decimal("0")
