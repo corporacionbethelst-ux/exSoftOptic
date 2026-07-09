@@ -104,3 +104,13 @@ th { color: #475569; font-size: .82rem; text-transform: uppercase; letter-spacin
 .boot-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 2rem; background: radial-gradient(circle at top, #ccfbf1, transparent 28rem), #f8fafc; color: #0f172a; }
 .boot-screen > div:last-child { display: grid; gap: .25rem; }
 .boot-screen span { color: var(--muted); }
+.toolbar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; margin-bottom: 1rem; }
+.action-cell { display: flex; align-items: center; gap: .5rem; }
+.danger-button { border: 0; border-radius: 14px; padding: .75rem 1rem; background: #fef2f2; color: var(--danger); font-weight: 800; }
+.crud-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.crud-form select { border: 1px solid var(--border); border-radius: 14px; padding: .85rem 1rem; background: white; color: #0f172a; outline: none; }
+.wide-field { grid-column: 1 / -1; }
+.check-field { display: flex; grid-template-columns: none; align-items: center; gap: .6rem; }
+.check-field input { width: auto; }
+.form-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+@media (max-width: 960px) { .crud-form, .toolbar-row { grid-template-columns: 1fr; } .action-cell { flex-wrap: wrap; } }
