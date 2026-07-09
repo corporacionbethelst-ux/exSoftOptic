@@ -11,7 +11,7 @@ from app.models.inventario import InventarioExistencia, KardexMovimiento
 from app.models.producto import Producto
 from app.models.sucursal import Sucursal
 from app.models.venta import Cliente, Paciente, RecetaOptica, Venta
-from app.schemas.laboratorio import ConsumoMaterialCreate, ControlCalidadCreate, OrdenLaboratorioFromVentaCreate
+from app.schemas.laboratorio import ConsumoMaterialCreate, ControlCalidadCreate, OrdenLaboratorioFromVentaCreate, OrdenLaboratorioResponse
 from app.services.inventory_service import InventoryService
 from app.services.lab_service import ETAPAS_ESTANDAR, LabService
 
@@ -56,6 +56,25 @@ async def test_crear_orden_laboratorio_desde_venta_confirmada(db_session: AsyncS
     assert orden.venta_id == venta.id
     assert len(orden.etapas) == len(ETAPAS_ESTANDAR)
     assert {etapa.etapa for etapa in orden.etapas} == set(ETAPAS_ESTANDAR)
+
+
+@pytest.mark.asyncio
+async def test_listar_ordenes_precarga_relaciones_para_response_model(db_session: AsyncSession):
+    empresa, _, venta, _ = await _base_laboratorio(db_session)
+    service = LabService(db_session)
+    await service.crear_orden_desde_venta(
+        empresa_id=empresa.id,
+        venta_id=venta.id,
+        payload=OrdenLaboratorioFromVentaCreate(folio="LAB-104"),
+    )
+
+    ordenes = await service.listar_ordenes(empresa_id=empresa.id)
+
+    assert len(ordenes) == 1
+    serialized = OrdenLaboratorioResponse.model_validate(ordenes[0])
+    assert len(serialized.etapas) == len(ETAPAS_ESTANDAR)
+    assert serialized.consumos == []
+    assert serialized.controles_calidad == []
 
 
 @pytest.mark.asyncio
