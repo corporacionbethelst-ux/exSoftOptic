@@ -1,8 +1,17 @@
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 from typing import Optional, Dict, Any
+
+import bcrypt
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+
 from app.core.config import settings
+
+if not hasattr(bcrypt, "__about__"):
+    # Passlib 1.7.x reads this legacy attribute when initializing bcrypt.
+    # bcrypt>=4.1 removed it, so provide a small compatibility shim.
+    bcrypt.__about__ = SimpleNamespace(__version__=bcrypt.__version__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
