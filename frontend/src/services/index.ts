@@ -1,4 +1,5 @@
 export { authService } from './auth.service';
+export { billingService } from './billing.service';
 export { catalogService } from './catalog.service';
 export { crmService } from './crm.service';
 export { financeService } from './finance.service';

@@ -117,6 +117,18 @@ class InvoiceService:
             await self.db.flush()
         return await self.obtener_factura(empresa_id=empresa_id, factura_id=factura_id)
 
+
+    async def listar_facturas(self, *, empresa_id: UUID, skip: int = 0, limit: int = 50) -> list[Factura]:
+        result = await self.db.execute(
+            select(Factura)
+            .options(selectinload(Factura.lineas), selectinload(Factura.eventos))
+            .where(Factura.empresa_id == empresa_id)
+            .order_by(Factura.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
     async def obtener_factura(self, *, empresa_id: UUID, factura_id: UUID) -> Factura:
         result = await self.db.execute(
             select(Factura)
