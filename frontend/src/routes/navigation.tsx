@@ -1,4 +1,4 @@
-import { Boxes, CalendarDays, ClipboardList, ContactRound, FileCheck2, FlaskConical, LayoutDashboard, PackageSearch, ReceiptText, ShoppingCart, Users } from 'lucide-react';
+import { BarChart3, Boxes, CalendarDays, ClipboardList, ContactRound, FileCheck2, FlaskConical, LayoutDashboard, PackageSearch, ReceiptText, ShoppingCart, Users } from 'lucide-react';
 import type { NavigationItem } from '../types/navigation';
 
 export const navigationItems: NavigationItem[] = [
@@ -13,4 +13,5 @@ export const navigationItems: NavigationItem[] = [
   { key: 'lab', label: 'Laboratorio', icon: <FlaskConical size={18} /> },
   { key: 'finance', label: 'Finanzas', icon: <ReceiptText size={18} /> },
   { key: 'billing', label: 'Facturación', icon: <FileCheck2 size={18} /> },
+  { key: 'reports', label: 'Reportes', icon: <BarChart3 size={18} /> },
 ];
