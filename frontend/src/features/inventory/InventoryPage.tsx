@@ -10,7 +10,7 @@ import type { Producto } from '../../types/catalog';
 import type { InventarioEntradaPayload, InventarioSalidaPayload } from '../../types/inventory';
 import { money } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 
 function movementTone(type: string): 'success' | 'warning' | 'danger' | 'neutral' {
   if (type === 'ENTRADA') return 'success';
@@ -48,8 +48,8 @@ export function InventoryPage() {
   const kardex = useApiResource(loadKardex);
   const products = useApiResource(loadProducts);
   const alerts = useApiResource(loadAlerts, Boolean(sucursalId));
-  const movements = kardex.data ?? [];
-  const productItems = products.data?.items ?? products.data?.productos ?? [];
+  const movements = useMemo(() => kardex.data ?? [], [kardex.data]);
+  const productItems = useMemo(() => products.data?.items ?? products.data?.productos ?? [], [products.data]);
   const totalEntradas = useMemo(() => movements.filter((item) => item.tipo_movimiento === 'ENTRADA').reduce((total, item) => total + Number(item.cantidad), 0), [movements]);
   const totalSalidas = useMemo(() => movements.filter((item) => item.tipo_movimiento === 'SALIDA').reduce((total, item) => total + Number(item.cantidad), 0), [movements]);
   const lastBalance = movements[0]?.saldo_cantidad ?? 0;

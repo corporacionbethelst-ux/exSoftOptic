@@ -11,7 +11,7 @@ import type { Producto } from '../../types/catalog';
 import type { OrdenCompra, OrdenCompraLineaPayload, OrdenCompraPayload, RecepcionCompraPayload } from '../../types/purchases';
 import { money } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 
 const DEFAULT_RECEIPT_ACCOUNTS = {
   cuenta_inventario: '115.01',

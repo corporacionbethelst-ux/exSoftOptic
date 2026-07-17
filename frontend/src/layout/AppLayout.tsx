@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { navigationItems } from '../routes/navigation';
 import { renderPage } from '../routes/renderPage';
 import type { PageKey } from '../types/navigation';
-import { useAuth } from '../features/auth/AuthContext';
+import { useAuth } from '../features/auth/authContext';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 

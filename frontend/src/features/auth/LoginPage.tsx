@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Glasses } from 'lucide-react';
 import { ApiError } from '../../services';
 import { env } from '../../config/env';
-import { useAuth } from './AuthContext';
+import { useAuth } from './authContext';
 
 export function LoginPage() {
   const { login } = useAuth();

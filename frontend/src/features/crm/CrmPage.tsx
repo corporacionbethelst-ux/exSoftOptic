@@ -8,7 +8,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { crmService } from '../../services';
 import type { CitaEstado, CitaOpticaPayload, RecordatorioClientePayload } from '../../types/crm';
 import { useApiResource } from '../../hooks/useApiResource';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 
 const APPOINTMENT_STATES: CitaEstado[] = ['PROGRAMADA', 'CONFIRMADA', 'EN_PROCESO', 'COMPLETADA', 'CANCELADA', 'NO_ASISTIO'];
 

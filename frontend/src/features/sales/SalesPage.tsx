@@ -6,7 +6,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { Pagination } from '../../components/Pagination';
 import { SectionPanel } from '../../components/SectionPanel';
 import { StatusBadge } from '../../components/StatusBadge';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/authContext';
 import { catalogService, salesService } from '../../services';
 import type { Producto } from '../../types/catalog';
 import type { Venta, VentaConfirmarPayload, VentaLineaPayload, VentaPayload } from '../../types/sales';

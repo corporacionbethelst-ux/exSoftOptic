@@ -1,6 +1,6 @@
 import { AppBootScreen } from '../components/AppBootScreen';
 import { LoginPage } from '../features/auth/LoginPage';
-import { useAuth } from '../features/auth/AuthContext';
+import { useAuth } from '../features/auth/authContext';
 import { AppLayout } from '../layout/AppLayout';
 
 export function App() {
