@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 import hashlib
 import secrets
 from jose import JWTError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -252,7 +253,6 @@ class AuthService:
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         
         # Buscar usuario con este token
-        from sqlalchemy import select
         result = await db.execute(
             select(Usuario).where(Usuario.deleted_at.is_(None))
         )
