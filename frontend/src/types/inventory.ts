@@ -10,3 +10,18 @@ export type KardexMovimiento = {
   saldo_cantidad: MoneyValue;
   created_at?: DateTimeString;
 };
+
+
+export type InventarioAlerta = {
+  producto_id: ID;
+  sucursal_id: ID;
+  sku: string;
+  nombre: string;
+  tipo_alerta: string;
+  severidad: string;
+  cantidad_actual: MoneyValue;
+  stock_minimo: MoneyValue;
+  punto_reorden?: MoneyValue | null;
+  valor_total: MoneyValue;
+  mensaje: string;
+};

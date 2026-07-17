@@ -1,4 +1,5 @@
 import { ProductsPage } from '../features/catalog/ProductsPage';
+import { PurchasesPage } from '../features/purchases/PurchasesPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { LabPage } from '../features/lab/LabPage';
 import { SalesPage } from '../features/sales/SalesPage';
@@ -13,6 +14,8 @@ export function renderPage(activePage: PageKey) {
       return <ProductsPage />;
     case 'sales':
       return <SalesPage />;
+    case 'purchases':
+      return <PurchasesPage />;
     case 'lab':
       return <LabPage />;
     default:

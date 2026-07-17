@@ -130,3 +130,11 @@ th { color: #475569; font-size: .82rem; text-transform: uppercase; letter-spacin
 .line-row select { border: 1px solid var(--border); border-radius: 14px; padding: .85rem 1rem; background: white; color: #0f172a; }
 .totals-card { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; flex-wrap: wrap; padding: 1rem; border: 1px solid var(--border); border-radius: 16px; background: #f8fafc; }
 @media (max-width: 960px) { .line-row { grid-template-columns: 1fr; } .totals-card { justify-content: flex-start; } }
+.module-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr); gap: 1rem; align-items: start; }
+.purchase-line-row { grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(90px, .35fr)) auto; }
+.alert-list { display: grid; gap: .75rem; margin-top: 1rem; }
+.alert-item { display: grid; gap: .25rem; padding: .9rem; border: 1px solid var(--border); border-radius: 16px; background: #fff7ed; color: #7c2d12; }
+.alert-item span, .alert-item small { color: #9a3412; }
+.compact-table table { font-size: .88rem; }
+@media (max-width: 1100px) { .module-grid { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .purchase-line-row { grid-template-columns: 1fr; } }
