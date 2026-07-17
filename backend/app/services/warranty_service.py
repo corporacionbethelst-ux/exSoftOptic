@@ -99,11 +99,28 @@ class WarrantyService:
         await self.db.flush()
         return await self.obtener_garantia(empresa_id=empresa_id, garantia_id=garantia.id)
 
+
+    async def listar_garantias(self, *, empresa_id: UUID, skip: int = 0, limit: int = 50) -> list[Garantia]:
+        result = await self.db.execute(
+            select(Garantia)
+            .options(selectinload(Garantia.reclamaciones), selectinload(Garantia.eventos))
+            .where(Garantia.empresa_id == empresa_id)
+            .order_by(Garantia.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .execution_options(populate_existing=True)
+        )
+        garantias = result.scalars().all()
+        for garantia in garantias:
+            await self._actualizar_estado_vencida(garantia)
+        return garantias
+
     async def obtener_garantia(self, *, empresa_id: UUID, garantia_id: UUID) -> Garantia:
         result = await self.db.execute(
             select(Garantia)
             .options(selectinload(Garantia.reclamaciones), selectinload(Garantia.eventos))
             .where(Garantia.empresa_id == empresa_id, Garantia.id == garantia_id)
+            .execution_options(populate_existing=True)
         )
         garantia = result.scalar_one_or_none()
         if garantia is None:
