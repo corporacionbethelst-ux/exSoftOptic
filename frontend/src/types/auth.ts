@@ -20,6 +20,38 @@ export type Usuario = {
   created_at: DateTimeString;
 };
 
+export type UsuarioPayload = {
+  username: string;
+  email: string;
+  nombre_completo: string;
+  telefono?: string | null;
+  password: string;
+  rol_id: ID;
+  sucursal_id?: ID | null;
+};
+
+export type UsuarioUpdatePayload = Partial<Omit<UsuarioPayload, 'username' | 'password'>> & {
+  esta_activo?: boolean;
+};
+
+export type Rol = {
+  id: ID;
+  nombre: string;
+  descripcion?: string | null;
+  nivel_acceso: number;
+  es_sistema: boolean;
+  permisos: string[];
+  esta_activo: boolean;
+  created_at: DateTimeString;
+};
+
+export type RolPayload = {
+  nombre: string;
+  descripcion?: string | null;
+  nivel_acceso: number;
+  permisos: string[];
+};
+
 export type LoginResponse = {
   access_token: string;
   refresh_token: string;
