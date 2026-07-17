@@ -12,6 +12,28 @@ class BudgetService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+
+    async def listar_centros_costo(self, *, empresa_id: UUID, skip: int = 0, limit: int = 100) -> list[CentroCosto]:
+        result = await self.db.execute(
+            select(CentroCosto)
+            .where(CentroCosto.empresa_id == empresa_id)
+            .order_by(CentroCosto.codigo.asc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+    async def listar_presupuestos(self, *, empresa_id: UUID, skip: int = 0, limit: int = 100) -> list[Presupuesto]:
+        result = await self.db.execute(
+            select(Presupuesto)
+            .options(selectinload(Presupuesto.lineas))
+            .where(Presupuesto.empresa_id == empresa_id)
+            .order_by(Presupuesto.fecha_inicio.desc(), Presupuesto.folio.asc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
     async def crear_centro_costo(self, *, empresa_id: UUID, payload: CentroCostoCreate) -> CentroCosto:
         centro = CentroCosto(empresa_id=empresa_id, estado="ACTIVO", **payload.model_dump())
         self.db.add(centro)
