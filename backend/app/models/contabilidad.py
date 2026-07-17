@@ -17,6 +17,7 @@ class CuentaContable(BaseModel):
     padre_id = Column(UUID(as_uuid=True), ForeignKey("cuentas_contables.id"), nullable=True)
     acepta_movimientos = Column(Boolean, default=True, nullable=False)
 
+    empresa = relationship("Empresa")
     padre = relationship("CuentaContable", remote_side="CuentaContable.id")
 
 
@@ -31,6 +32,8 @@ class PeriodoContable(BaseModel):
     fecha_fin = Column(Date, nullable=False, index=True)
     estado = Column(String(20), nullable=False, default="ABIERTO", index=True)
 
+    empresa = relationship("Empresa")
+
 
 class AsientoContable(BaseModel):
     __tablename__ = "asientos_contables"
@@ -44,6 +47,7 @@ class AsientoContable(BaseModel):
     moneda = Column(String(3), nullable=False, default="MXN")
     estado = Column(String(20), nullable=False, default="CONTABILIZADO")
 
+    empresa = relationship("Empresa")
     lineas = relationship("LineaAsientoContable", back_populates="asiento", cascade="all, delete-orphan")
 
 
