@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_active_user, require_permissions
@@ -11,6 +11,16 @@ from app.services.payroll_service import PayrollService
 from app.services.secured_audit import audit_user_action
 
 router = APIRouter()
+
+
+@router.get("/empleados", response_model=list[EmpleadoResponse], dependencies=[Depends(require_permissions(["nomina.leer"]))])
+async def listar_empleados(skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await PayrollService(db).listar_empleados(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
+
+
+@router.get("/periodos", response_model=list[NominaPeriodoResponse], dependencies=[Depends(require_permissions(["nomina.leer"]))])
+async def listar_periodos(skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await PayrollService(db).listar_periodos(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
 
 
 @router.post("/empleados", response_model=EmpleadoResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["nomina.empleados.crear"]))])
