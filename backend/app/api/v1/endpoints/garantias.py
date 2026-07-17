@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_active_user, require_permissions
@@ -10,6 +10,11 @@ from app.schemas.garantias import GarantiaCreate, GarantiaFromOrdenCreate, Garan
 from app.services.warranty_service import WarrantyService
 
 router = APIRouter()
+
+
+@router.get("/", response_model=list[GarantiaResponse], dependencies=[Depends(require_permissions(["garantias.leer"]))])
+async def listar_garantias(skip: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await WarrantyService(db).listar_garantias(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
 
 
 @router.post("/", response_model=GarantiaResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["garantias.crear"]))])
