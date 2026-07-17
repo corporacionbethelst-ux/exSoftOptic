@@ -1,3 +1,4 @@
+export { adminService } from './admin.service';
 export { authService } from './auth.service';
 export { billingService } from './billing.service';
 export { catalogService } from './catalog.service';

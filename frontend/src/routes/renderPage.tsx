@@ -1,5 +1,6 @@
 import { ProductsPage } from '../features/catalog/ProductsPage';
 import { PurchasesPage } from '../features/purchases/PurchasesPage';
+import { AdminPage } from '../features/admin/AdminPage';
 import { BillingPage } from '../features/billing/BillingPage';
 import { CrmPage } from '../features/crm/CrmPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
@@ -36,6 +37,8 @@ export function renderPage(activePage: PageKey) {
       return <BillingPage />;
     case 'reports':
       return <ReportsPage />;
+    case 'admin':
+      return <AdminPage />;
     default:
       return <DashboardPage />;
   }
