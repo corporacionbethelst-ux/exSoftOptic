@@ -125,3 +125,8 @@ th { color: #475569; font-size: .82rem; text-transform: uppercase; letter-spacin
 .role-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 1rem; }
 .role-form { display: grid; gap: 1rem; align-content: start; }
 @media (max-width: 960px) { .role-grid { grid-template-columns: 1fr; } }
+.line-editor { display: grid; gap: .75rem; }
+.line-row { display: grid; grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(90px, .35fr)) auto; gap: .65rem; align-items: end; }
+.line-row select { border: 1px solid var(--border); border-radius: 14px; padding: .85rem 1rem; background: white; color: #0f172a; }
+.totals-card { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; flex-wrap: wrap; padding: 1rem; border: 1px solid var(--border); border-radius: 16px; background: #f8fafc; }
+@media (max-width: 960px) { .line-row { grid-template-columns: 1fr; } .totals-card { justify-content: flex-start; } }
