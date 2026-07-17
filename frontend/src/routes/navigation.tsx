@@ -1,4 +1,4 @@
-import { Boxes, ClipboardList, FlaskConical, LayoutDashboard, PackageSearch, ShoppingCart, Users } from 'lucide-react';
+import { Boxes, CalendarDays, ClipboardList, FlaskConical, LayoutDashboard, PackageSearch, ShoppingCart, Users } from 'lucide-react';
 import type { NavigationItem } from '../types/navigation';
 
 export const navigationItems: NavigationItem[] = [
@@ -8,5 +8,6 @@ export const navigationItems: NavigationItem[] = [
   { key: 'inventory', label: 'Inventario', icon: <PackageSearch size={18} /> },
   { key: 'sales', label: 'Ventas', icon: <ShoppingCart size={18} /> },
   { key: 'purchases', label: 'Compras', icon: <ClipboardList size={18} /> },
+  { key: 'crm', label: 'CRM', icon: <CalendarDays size={18} /> },
   { key: 'lab', label: 'Laboratorio', icon: <FlaskConical size={18} /> },
 ];
