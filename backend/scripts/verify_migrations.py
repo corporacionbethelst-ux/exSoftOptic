@@ -3,11 +3,41 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_env_file(path: Path, *, protected_keys: set[str]) -> None:
+    """Load simple KEY=VALUE entries without overriding protected variables."""
+    if not path.exists():
+        return
+
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key not in protected_keys:
+            os.environ[key] = value
+
+
+def load_test_environment() -> None:
+    """Load test DB defaults for Alembic unless caller exported env vars."""
+    protected_keys = set(os.environ)
+    load_env_file(BACKEND_ROOT / ".env.test", protected_keys=protected_keys)
+    load_env_file(BACKEND_ROOT / ".env.test.local", protected_keys=protected_keys)
+    os.environ.setdefault(
+        "DATABASE_URL",
+        "postgresql+asyncpg://optica_user:optica_password_2026@localhost:55432/optica_test",
+    )
 
 
 @dataclass(frozen=True)
@@ -51,6 +81,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    load_test_environment()
     args = parse_args()
     for command in build_plan(roundtrip=args.roundtrip):
         run(command)
