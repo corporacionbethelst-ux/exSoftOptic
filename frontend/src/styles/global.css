@@ -143,3 +143,20 @@ th { color: #475569; font-size: .82rem; text-transform: uppercase; letter-spacin
 .table-wrap select { border: 1px solid var(--border); border-radius: 12px; padding: .55rem .75rem; background: white; color: #0f172a; }
 .compact-id { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; color: var(--muted); }
 .reminder-form { margin-top: 1rem; }
+
+.selected-row {
+  background: #ecfeff;
+  outline: 2px solid rgba(14, 116, 144, 0.24);
+}
+
+.optical-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 920px) {
+  .optical-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

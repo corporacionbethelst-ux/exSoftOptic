@@ -1,6 +1,7 @@
 export type ID = string;
 export type MoneyValue = string | number;
 export type DateTimeString = string;
+export type DateString = string;
 
 export type ApiErrorPayload = {
   error?: {

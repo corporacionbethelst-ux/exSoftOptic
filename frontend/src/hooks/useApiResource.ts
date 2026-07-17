@@ -19,7 +19,10 @@ export function useApiResource<T>(loader: () => Promise<T>, enabled = true) {
   }, [loader]);
 
   useEffect(() => {
-    if (enabled) void load();
+    if (!enabled) return;
+    queueMicrotask(() => {
+      void load();
+    });
   }, [enabled, load]);
 
   return { data, loading, error, reload: load };

@@ -23,7 +23,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedSession = getStoredTokens();
 
     if (!storedSession?.access_token) {
-      setIsBootstrapping(false);
+      queueMicrotask(() => {
+        if (mounted) setIsBootstrapping(false);
+      });
       return;
     }
 

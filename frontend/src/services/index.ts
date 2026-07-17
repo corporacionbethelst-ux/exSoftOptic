@@ -5,6 +5,7 @@ export { healthService } from './health.service';
 export { inventoryService } from './inventory.service';
 export { labService } from './lab.service';
 export { purchasesService } from './purchases.service';
+export { patientsService } from './patients.service';
 export { salesService } from './sales.service';
 export { usersService } from './users.service';
 export { ApiError } from './http/apiError';

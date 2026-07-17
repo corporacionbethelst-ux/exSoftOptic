@@ -4,6 +4,7 @@ import { CrmPage } from '../features/crm/CrmPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { LabPage } from '../features/lab/LabPage';
+import { PatientsPage } from '../features/patients/PatientsPage';
 import { SalesPage } from '../features/sales/SalesPage';
 import { UsersPage } from '../features/users/UsersPage';
 import type { PageKey } from '../types/navigation';
@@ -22,6 +23,8 @@ export function renderPage(activePage: PageKey) {
       return <PurchasesPage />;
     case 'crm':
       return <CrmPage />;
+    case 'patients':
+      return <PatientsPage />;
     case 'lab':
       return <LabPage />;
     default:
