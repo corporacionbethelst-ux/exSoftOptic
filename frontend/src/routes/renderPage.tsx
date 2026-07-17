@@ -2,6 +2,7 @@ import { ProductsPage } from '../features/catalog/ProductsPage';
 import { PurchasesPage } from '../features/purchases/PurchasesPage';
 import { CrmPage } from '../features/crm/CrmPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { FinancePage } from '../features/finance/FinancePage';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { LabPage } from '../features/lab/LabPage';
 import { PatientsPage } from '../features/patients/PatientsPage';
@@ -27,6 +28,8 @@ export function renderPage(activePage: PageKey) {
       return <PatientsPage />;
     case 'lab':
       return <LabPage />;
+    case 'finance':
+      return <FinancePage />;
     default:
       return <DashboardPage />;
   }

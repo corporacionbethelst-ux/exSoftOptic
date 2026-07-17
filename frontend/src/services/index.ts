@@ -1,6 +1,7 @@
 export { authService } from './auth.service';
 export { catalogService } from './catalog.service';
 export { crmService } from './crm.service';
+export { financeService } from './finance.service';
 export { healthService } from './health.service';
 export { inventoryService } from './inventory.service';
 export { labService } from './lab.service';
