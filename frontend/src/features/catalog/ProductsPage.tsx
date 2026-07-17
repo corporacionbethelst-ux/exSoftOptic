@@ -1,13 +1,17 @@
 import type { FormEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { InlineState } from '../../components/InlineState';
 import { PageHeader } from '../../components/PageHeader';
+import { Pagination } from '../../components/Pagination';
 import { SectionPanel } from '../../components/SectionPanel';
 import { StatusBadge } from '../../components/StatusBadge';
 import { catalogService } from '../../services';
 import type { Producto, ProductoPayload } from '../../types/catalog';
 import { money } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
+
+const DEFAULT_PAGE_SIZE = 20;
 
 const DEFAULT_FORM: ProductoPayload = {
   sku: '',
@@ -44,39 +48,59 @@ function productToForm(product: Producto): ProductoPayload {
 }
 
 export function ProductsPage() {
+  const [searchDraft, setSearchDraft] = useState('');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Producto | null>(null);
   const [form, setForm] = useState<ProductoPayload>(DEFAULT_FORM);
   const [formError, setFormError] = useState<string | null>(null);
+  const [operationMessage, setOperationMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const loadProducts = useCallback(() => catalogService.products({ search }), [search]);
+  const [deleting, setDeleting] = useState(false);
+  const skip = (page - 1) * pageSize;
+  const loadProducts = useCallback(() => catalogService.products({ skip, limit: pageSize, search }), [pageSize, search, skip]);
   const products = useApiResource(loadProducts);
   const items = products.data?.items ?? products.data?.productos ?? [];
+  const total = products.data?.total ?? items.length;
   const isEditing = Boolean(editingProduct);
 
-  const totalLabel = useMemo(() => `${products.data?.total ?? items.length} productos`, [items.length, products.data?.total]);
+  const totalLabel = useMemo(() => `${total} productos`, [total]);
 
   function openCreate() {
     setEditingProduct(null);
     setForm(DEFAULT_FORM);
     setFormError(null);
+    setOperationMessage(null);
   }
 
   function openEdit(product: Producto) {
     setEditingProduct(product);
     setForm(productToForm(product));
     setFormError(null);
+    setOperationMessage(null);
+  }
+
+  function applySearch(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    setPage(1);
+    setSearch(searchDraft.trim());
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setFormError(null);
+    setOperationMessage(null);
     try {
       if (editingProduct) {
         await catalogService.updateProduct(editingProduct.id, form);
+        setOperationMessage('Producto actualizado correctamente.');
       } else {
         await catalogService.createProduct(form);
+        setOperationMessage('Producto creado correctamente.');
+        setPage(1);
       }
       setEditingProduct(null);
       setForm(DEFAULT_FORM);
@@ -88,10 +112,20 @@ export function ProductsPage() {
     }
   }
 
-  async function handleDelete(product: Producto) {
-    if (!window.confirm(`¿Eliminar ${product.nombre}?`)) return;
-    await catalogService.deleteProduct(product.id);
-    await products.reload();
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setOperationMessage(null);
+    try {
+      await catalogService.deleteProduct(pendingDelete.id);
+      setPendingDelete(null);
+      setOperationMessage('Producto eliminado correctamente.');
+      await products.reload();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'No se pudo eliminar el producto');
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -99,15 +133,15 @@ export function ProductsPage() {
       <PageHeader
         eyebrow="Catálogo"
         title="Productos"
-        description="CRUD base de productos para compras, ventas e inventario."
+        description="Fase completa de catálogo: búsqueda, paginación, creación, edición y eliminación lógica."
         actions={<button className="primary-button" onClick={openCreate}>Nuevo producto</button>}
       />
 
       <SectionPanel title="Gestión de catálogo" footer={<span className="muted compact">{totalLabel}</span>}>
-        <div className="toolbar-row">
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nombre o SKU" />
-          <button className="secondary-button" onClick={() => void products.reload()}>Buscar</button>
-        </div>
+        <form className="toolbar-row" onSubmit={applySearch}>
+          <input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Buscar por nombre o SKU" />
+          <button className="secondary-button">Buscar</button>
+        </form>
         <InlineState loading={products.loading} error={products.error} empty={items.length === 0} emptyTitle="Sin productos" emptyDescription="Crea el primer producto o ejecuta make seed-demo.">
           <div className="table-wrap">
             <table>
@@ -122,17 +156,28 @@ export function ProductsPage() {
                     <td>{product.requiere_receta ? 'Sí' : 'No'}</td>
                     <td className="action-cell">
                       <button className="secondary-button" onClick={() => openEdit(product)}>Editar</button>
-                      <button className="danger-button" onClick={() => void handleDelete(product)}>Eliminar</button>
+                      <button className="danger-button" onClick={() => setPendingDelete(product)}>Eliminar</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={(nextPageSize) => {
+              setPage(1);
+              setPageSize(nextPageSize);
+            }}
+          />
         </InlineState>
       </SectionPanel>
 
       <SectionPanel title={isEditing ? 'Editar producto' : 'Nuevo producto'} description="Campos mínimos para operar catálogo, venta e inventario.">
+        {operationMessage ? <div className="alert success wide-field">{operationMessage}</div> : null}
         <form className="crud-form" onSubmit={(event) => void handleSubmit(event)}>
           <label>SKU<input value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value })} required /></label>
           <label>Nombre<input value={form.nombre} onChange={(event) => setForm({ ...form, nombre: event.target.value })} required /></label>
@@ -151,6 +196,7 @@ export function ProductsPage() {
           <label className="wide-field">Descripción<input value={form.descripcion ?? ''} onChange={(event) => setForm({ ...form, descripcion: event.target.value })} /></label>
           <label className="check-field"><input type="checkbox" checked={form.requiere_receta} onChange={(event) => setForm({ ...form, requiere_receta: event.target.checked })} /> Requiere receta</label>
           <label className="check-field"><input type="checkbox" checked={form.requiere_lote} onChange={(event) => setForm({ ...form, requiere_lote: event.target.checked })} /> Control por lote</label>
+          <label className="check-field"><input type="checkbox" checked={form.requiere_serie} onChange={(event) => setForm({ ...form, requiere_serie: event.target.checked })} /> Control por serie</label>
           {formError ? <div className="alert error wide-field">{formError}</div> : null}
           <div className="form-actions wide-field">
             <button className="primary-button" disabled={saving}>{saving ? 'Guardando…' : isEditing ? 'Actualizar' : 'Crear producto'}</button>
@@ -158,6 +204,18 @@ export function ProductsPage() {
           </div>
         </form>
       </SectionPanel>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Eliminar producto"
+        description="Esta acción realiza eliminación lógica: el producto deja de aparecer en el catálogo, pero se conserva la trazabilidad histórica."
+        confirmLabel="Eliminar producto"
+        busy={deleting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      >
+        <strong>{pendingDelete?.nombre}</strong>
+      </ConfirmDialog>
     </section>
   );
 }
