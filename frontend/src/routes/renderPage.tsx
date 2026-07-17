@@ -8,6 +8,7 @@ import { FinancePage } from '../features/finance/FinancePage';
 import { InventoryPage } from '../features/inventory/InventoryPage';
 import { LabPage } from '../features/lab/LabPage';
 import { PatientsPage } from '../features/patients/PatientsPage';
+import { OperationsPage } from '../features/operations/OperationsPage';
 import { ReportsPage } from '../features/reports/ReportsPage';
 import { SalesPage } from '../features/sales/SalesPage';
 import { UsersPage } from '../features/users/UsersPage';
@@ -37,6 +38,8 @@ export function renderPage(activePage: PageKey) {
       return <BillingPage />;
     case 'reports':
       return <ReportsPage />;
+    case 'operations':
+      return <OperationsPage />;
     case 'admin':
       return <AdminPage />;
     default:

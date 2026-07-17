@@ -7,6 +7,7 @@ export { financeService } from './finance.service';
 export { healthService } from './health.service';
 export { inventoryService } from './inventory.service';
 export { labService } from './lab.service';
+export { operationsService } from './operations.service';
 export { purchasesService } from './purchases.service';
 export { reportsService } from './reports.service';
 export { patientsService } from './patients.service';
