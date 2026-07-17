@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type PageKey = 'dashboard' | 'users' | 'products' | 'sales' | 'purchases' | 'lab';
+export type PageKey = 'dashboard' | 'users' | 'products' | 'inventory' | 'sales' | 'purchases' | 'lab';
 
 export type NavigationItem = {
   key: PageKey;
