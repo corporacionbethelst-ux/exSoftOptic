@@ -46,10 +46,12 @@ class SalesService:
         self.db.add(venta)
         await self.db.flush()
 
+        venta_lineas = []
         for linea in payload.lineas:
             producto = await self._get_producto(empresa_id, linea.producto_id)
-            venta.lineas.append(
+            venta_lineas.append(
                 VentaLinea(
+                    venta_id=venta.id,
                     producto_id=producto.id,
                     descripcion=linea.descripcion or producto.nombre,
                     cantidad=linea.cantidad,
@@ -59,10 +61,10 @@ class SalesService:
                     costo_total=Decimal("0"),
                 )
             )
-        for pago in payload.pagos:
-            venta.pagos.append(PagoVenta(**pago.model_dump()))
+        pagos = [PagoVenta(venta_id=venta.id, **pago.model_dump()) for pago in payload.pagos]
+        self.db.add_all([*venta_lineas, *pagos])
         await self.db.flush()
-        return venta
+        return await self.obtener_venta(empresa_id=empresa_id, venta_id=venta.id)
 
     async def confirmar_venta(
         self,
