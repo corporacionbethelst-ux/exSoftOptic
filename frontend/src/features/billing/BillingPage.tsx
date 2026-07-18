@@ -55,7 +55,29 @@ export function BillingPage() {
 
   async function issueInvoice(event: FormEvent<HTMLFormElement>) { event.preventDefault(); await withOperation('emitir', async () => { const invoice = await billingService.issueInvoice(invoiceForm); setSelectedInvoiceId(invoice.id); setInvoiceForm((current) => ({ ...current, folio: `FAC-${Date.now()}` })); }); }
   async function cancelInvoice(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!selectedInvoice) { setError('Selecciona una factura.'); return; } await withOperation('cancelar', () => billingService.cancelInvoice(selectedInvoice.id, { motivo: cancelReason })); }
-  async function createWarranty(event: FormEvent<HTMLFormElement>) { event.preventDefault(); await withOperation('garantia', async () => { const payload = { ...warrantyForm, orden_laboratorio_id: optional(warrantyForm.orden_laboratorio_id), descripcion: optional(warrantyForm.descripcion), condiciones: optional(warrantyForm.condiciones) }; const warranty = warrantyForm.orden_laboratorio_id ? await billingService.createWarrantyFromLab(warrantyForm.orden_laboratorio_id, payload) : await billingService.createWarranty(payload); setSelectedWarrantyId(warranty.id); setWarrantyForm((current) => ({ ...current, folio: `GAR-${Date.now()}` })); }); }
+  async function createWarranty(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await withOperation('garantia', async () => {
+      const basePayload = {
+        folio: warrantyForm.folio,
+        tipo: warrantyForm.tipo,
+        fecha_inicio: warrantyForm.fecha_inicio,
+        fecha_fin: warrantyForm.fecha_fin,
+        descripcion: optional(warrantyForm.descripcion),
+        condiciones: optional(warrantyForm.condiciones),
+      };
+      const orderId = optional(warrantyForm.orden_laboratorio_id);
+      const warranty = orderId
+        ? await billingService.createWarrantyFromLab(orderId, basePayload)
+        : await billingService.createWarranty({
+          ...basePayload,
+          venta_id: warrantyForm.venta_id,
+          orden_laboratorio_id: null,
+        });
+      setSelectedWarrantyId(warranty.id);
+      setWarrantyForm((current) => ({ ...current, folio: `GAR-${Date.now()}` }));
+    });
+  }
   async function openClaim(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!selectedWarranty) { setError('Selecciona una garantía.'); return; } await withOperation('reclamacion', async () => { const claim = await billingService.openClaim(selectedWarranty.id, claimForm); setSelectedClaimId(claim.id); setClaimForm({ folio: `REC-${Date.now()}`, motivo: '' }); }); }
   async function resolveClaim(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!selectedClaimId) { setError('Selecciona una reclamación abierta.'); return; } await withOperation('resolver', () => billingService.resolveClaim(selectedClaimId, resolutionForm)); }
 
@@ -74,7 +96,7 @@ export function BillingPage() {
 
     <div className="module-grid two-columns">
       <SectionPanel title="Garantías"><InlineState loading={warranties.loading} error={warranties.error} empty={warrantyItems.length === 0} emptyTitle="Sin garantías" emptyDescription="Crea una garantía desde una venta confirmada o una orden entregada."><div className="table-wrap compact-table"><table><thead><tr><th>Folio</th><th>Tipo</th><th>Vigencia</th><th>Estado</th></tr></thead><tbody>{warrantyItems.map((warranty) => <tr key={warranty.id} className={warranty.id === selectedWarranty?.id ? 'selected-row' : undefined} onClick={() => setSelectedWarrantyId(warranty.id)}><td><strong>{warranty.folio}</strong><br /><span className="compact-id">{warranty.id}</span></td><td>{warranty.tipo}</td><td>{warranty.fecha_inicio} - {warranty.fecha_fin}</td><td><StatusBadge tone={tone(warranty.estado)}>{warranty.estado}</StatusBadge></td></tr>)}</tbody></table></div></InlineState></SectionPanel>
-      <SectionPanel title="Crear garantía"><form className="crud-form" onSubmit={createWarranty}><label>Venta<select required value={warrantyForm.venta_id} onChange={(event) => setWarrantyForm({ ...warrantyForm, venta_id: event.target.value })}><option value="">Selecciona venta</option>{confirmedSales.map((sale) => <option key={sale.id} value={sale.id}>{sale.folio}</option>)}</select></label><label>Orden entregada opcional<select value={warrantyForm.orden_laboratorio_id} onChange={(event) => setWarrantyForm({ ...warrantyForm, orden_laboratorio_id: event.target.value })}><option value="">Sin orden</option>{deliveredOrders.map((order) => <option key={order.id} value={order.id}>{order.folio}</option>)}</select></label><div className="form-row"><label>Folio<input required value={warrantyForm.folio} onChange={(event) => setWarrantyForm({ ...warrantyForm, folio: event.target.value })} /></label><label>Tipo<select value={warrantyForm.tipo} onChange={(event) => setWarrantyForm({ ...warrantyForm, tipo: event.target.value as Garantia['tipo'] })}>{WARRANTY_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label></div><div className="form-row"><label>Inicio<input type="date" value={warrantyForm.fecha_inicio} onChange={(event) => setWarrantyForm({ ...warrantyForm, fecha_inicio: event.target.value })} /></label><label>Fin<input type="date" value={warrantyForm.fecha_fin} onChange={(event) => setWarrantyForm({ ...warrantyForm, fecha_fin: event.target.value })} /></label></div><label>Descripción<textarea value={warrantyForm.descripcion} onChange={(event) => setWarrantyForm({ ...warrantyForm, descripcion: event.target.value })} /></label><button disabled={saving === 'garantia'}>Crear garantía</button></form></SectionPanel>
+      <SectionPanel title="Crear garantía"><form className="crud-form" onSubmit={createWarranty}><label>Venta<select required={!warrantyForm.orden_laboratorio_id} value={warrantyForm.venta_id} onChange={(event) => setWarrantyForm({ ...warrantyForm, venta_id: event.target.value })}><option value="">Selecciona venta</option>{confirmedSales.map((sale) => <option key={sale.id} value={sale.id}>{sale.folio}</option>)}</select></label><label>Orden entregada opcional<select value={warrantyForm.orden_laboratorio_id} onChange={(event) => setWarrantyForm({ ...warrantyForm, orden_laboratorio_id: event.target.value })}><option value="">Sin orden</option>{deliveredOrders.map((order) => <option key={order.id} value={order.id}>{order.folio}</option>)}</select></label><div className="form-row"><label>Folio<input required value={warrantyForm.folio} onChange={(event) => setWarrantyForm({ ...warrantyForm, folio: event.target.value })} /></label><label>Tipo<select value={warrantyForm.tipo} onChange={(event) => setWarrantyForm({ ...warrantyForm, tipo: event.target.value as Garantia['tipo'] })}>{WARRANTY_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label></div><div className="form-row"><label>Inicio<input type="date" value={warrantyForm.fecha_inicio} onChange={(event) => setWarrantyForm({ ...warrantyForm, fecha_inicio: event.target.value })} /></label><label>Fin<input type="date" value={warrantyForm.fecha_fin} onChange={(event) => setWarrantyForm({ ...warrantyForm, fecha_fin: event.target.value })} /></label></div><label>Descripción<textarea value={warrantyForm.descripcion} onChange={(event) => setWarrantyForm({ ...warrantyForm, descripcion: event.target.value })} /></label><button disabled={saving === 'garantia'}>Crear garantía</button></form></SectionPanel>
     </div>
 
     <SectionPanel title="Detalle de garantía" footer={<span className="muted compact">{selectedWarranty ? selectedWarranty.folio : 'Selecciona una garantía'}</span>}>
