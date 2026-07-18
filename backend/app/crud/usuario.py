@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Any, Optional, List
 from uuid import UUID
 from datetime import datetime, timedelta
 from sqlalchemy import func, or_, select, and_
@@ -203,7 +203,7 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
 
         return query
 
-class CRUDRol(CRUDBase[Rol, any, any]):
+class CRUDRol(CRUDBase[Rol, Any, Any]):
     """CRUD para roles"""
     
     async def get_by_nombre(self, db: AsyncSession, nombre: str) -> Optional[Rol]:
