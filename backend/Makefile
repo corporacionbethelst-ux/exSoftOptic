@@ -111,13 +111,13 @@ run:  ## Ejecutar servidor de desarrollo
 	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 migrate:  ## Crear migración
-	alembic revision --autogenerate -m "$(msg)"
+	python -c "from alembic.config import main; main()" revision --autogenerate -m "$(msg)"
 
 migrate-up:  ## Aplicar migraciones
-	alembic upgrade head
+	python -c "from alembic.config import main; main()" upgrade head
 
 migrate-down:  ## Revertir última migración
-	alembic downgrade -1
+	python -c "from alembic.config import main; main()" downgrade -1
 
 seed:  ## Cargar datos semilla
 	python -m app.core.seed

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import os
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,6 +42,19 @@ def load_test_environment() -> None:
     )
 
 
+def ensure_alembic_available() -> None:
+    """Fail fast with an actionable message when Alembic is not installed."""
+    try:
+        spec = importlib.util.find_spec("alembic.config")
+    except ModuleNotFoundError:
+        spec = None
+    if spec is None:
+        raise SystemExit(
+            "❌ Alembic is not installed in the active Python environment. "
+            "Run `cd backend && python -m pip install -r requirements-dev.txt` and retry."
+        )
+
+
 @dataclass(frozen=True)
 class AlembicCommand:
     label: str
@@ -47,9 +62,10 @@ class AlembicCommand:
 
 
 def run(command: AlembicCommand) -> None:
-    printable = " ".join(["alembic", *command.args])
+    invoker = [sys.executable, "-c", "from alembic.config import main; main()"]
+    printable = " ".join([sys.executable, "-c", invoker[2], *command.args])
     print(f"▶ {command.label}: {printable}")
-    subprocess.run(["alembic", *command.args], cwd=BACKEND_ROOT, check=True)
+    subprocess.run([*invoker, *command.args], cwd=BACKEND_ROOT, check=True)
 
 
 def build_plan(*, roundtrip: bool) -> list[AlembicCommand]:
@@ -83,6 +99,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     load_test_environment()
     args = parse_args()
+    ensure_alembic_available()
+    load_test_environment()
     for command in build_plan(roundtrip=args.roundtrip):
         run(command)
     print("✅ alembic migrations verified")
