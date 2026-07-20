@@ -43,6 +43,24 @@ VITE_API_BASE_URL=http://localhost:8000
 
 Si no defines `VITE_API_BASE_URL`, Vite usa los proxies configurados para `/api`, `/health` y `/ready`.
 
+## Instalación de dependencias
+
+Antes de ejecutar `npm run lint`, `npm run typecheck`, `npm run build` o `npm run dev`, instala las dependencias locales del frontend:
+
+```bash
+cd frontend
+npm install
+```
+
+En entornos de CI o cuando ya exista `package-lock.json`, usa instalación reproducible:
+
+```bash
+cd frontend
+npm ci
+```
+
+Si ves el error `sh: 1: eslint: not found`, significa que `node_modules/` no existe o está incompleto. Ejecuta `npm install` desde `frontend/` y vuelve a correr `npm run lint`.
+
 ## Desarrollo local
 
 Desde la raíz del repo:
