@@ -97,6 +97,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    load_test_environment()
     args = parse_args()
     ensure_alembic_available()
     load_test_environment()
