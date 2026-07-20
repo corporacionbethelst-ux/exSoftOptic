@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_active_user, require_permissions
@@ -9,6 +9,16 @@ from app.services.budget_service import BudgetService
 from app.services.secured_audit import audit_user_action
 
 router = APIRouter()
+
+
+@router.get("/centros-costo", response_model=list[CentroCostoResponse], dependencies=[Depends(require_permissions(["presupuestos.centros_costo.leer"]))])
+async def listar_centros_costo(skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await BudgetService(db).listar_centros_costo(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
+
+
+@router.get("/", response_model=list[PresupuestoResponse], dependencies=[Depends(require_permissions(["presupuestos.leer"]))])
+async def listar_presupuestos(skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await BudgetService(db).listar_presupuestos(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
 
 
 @router.post("/centros-costo", response_model=CentroCostoResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["presupuestos.centros_costo.crear"]))])
