@@ -6,9 +6,16 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from dataclasses import dataclass
 from decimal import Decimal
+from pathlib import Path
 from uuid import UUID, uuid5, NAMESPACE_URL
+
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 TEST_NAMESPACE = "https://exsoftoptic.local/backend-test-seed"
 
