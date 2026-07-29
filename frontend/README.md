@@ -87,11 +87,18 @@ Desde la raíz del repo:
 
 ```bash
 cd backend
+make db-up
 make migrate-up
 make seed
 make seed-demo
 make run
 ```
+
+`make seed-demo` necesita una conexión activa a PostgreSQL. Si aparece
+`Connect call failed ('127.0.0.1', 5432)`, la base principal no está levantada o
+`DATABASE_URL` apunta a un puerto incorrecto. `make db-up` usa el archivo
+`docker-compose.yml` de la raíz y espera a que PostgreSQL esté saludable sin
+levantar otra instancia del backend que compita con `make run` por el puerto 8000.
 
 En otra terminal:
 

@@ -276,7 +276,22 @@ async def seed_demo_data(*, dry_run: bool = False, reset_demo: bool = False) -> 
 
 def main() -> int:
     args = parse_args()
-    result = asyncio.run(seed_demo_data(dry_run=args.dry_run, reset_demo=args.reset_demo))
+    try:
+        result = asyncio.run(seed_demo_data(dry_run=args.dry_run, reset_demo=args.reset_demo))
+    except OSError as exc:
+        print(
+            "ERROR: No fue posible conectar con PostgreSQL para cargar los datos demo.\n"
+            "Comprueba que DATABASE_URL apunta a la base correcta y levanta PostgreSQL "
+            "antes de ejecutar el seed:\n\n"
+            "  cd backend\n"
+            "  make db-up\n"
+            "  make migrate-up\n"
+            "  make seed\n"
+            "  make seed-demo\n\n"
+            f"Detalle de conexión: {exc}",
+            file=sys.stderr,
+        )
+        return 2
     print(json.dumps(result, sort_keys=True, ensure_ascii=False))
     return 0
 
