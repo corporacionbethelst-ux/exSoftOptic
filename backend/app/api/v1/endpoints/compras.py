@@ -3,10 +3,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_active_user, require_permissions
 from app.core.database import get_db
+from app.models.compra import OrdenCompra
 from app.models.usuario import Usuario
 from app.schemas.compras import OrdenCompraCreate, OrdenCompraResponse, RecepcionCompraCreate, RecepcionCompraResponse, SolicitudCompraGenerarRequest, SolicitudCompraResponse
 from app.services.idempotency_service import IdempotencyService
@@ -15,6 +18,19 @@ from app.services.purchase_service import PurchaseService
 from app.services.secured_audit import audit_user_action
 
 router = APIRouter()
+
+
+@router.get("/ordenes", response_model=list[OrdenCompraResponse], dependencies=[Depends(require_permissions(["compras.leer"]))])
+async def listar_ordenes(skip: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    query = (
+        select(OrdenCompra)
+        .options(selectinload(OrdenCompra.lineas))
+        .where(OrdenCompra.empresa_id == current_user.empresa_id)
+        .order_by(OrdenCompra.fecha.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    return (await db.execute(query)).scalars().all()
 
 
 @router.post("/ordenes", response_model=OrdenCompraResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["compras.crear"]))])

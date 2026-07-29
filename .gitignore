@@ -1,10 +1,11 @@
-```
 # Environment files
 .env
 .env.local
 .env.*
 backend/.env.test.local
 backend/.env.local
+!backend/.env.test.example
+!frontend/.env.example
 
 # Logs and temporary files
 *.log
@@ -20,6 +21,8 @@ backend/.env.local
 node_modules/
 venv/
 .venv/
+backend/venv/
+backend/.venv/
 __pycache__/
 .mypy_cache/
 .pytest_cache/
@@ -28,4 +31,3 @@ __pycache__/
 dist/
 build/
 target/
-```
