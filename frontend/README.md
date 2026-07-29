@@ -61,6 +61,26 @@ npm ci
 
 Si ves el error `sh: 1: eslint: not found`, significa que `node_modules/` no existe o está incompleto. Ejecuta `npm install` desde `frontend/` y vuelve a correr `npm run lint`.
 
+### Error `react-hooks/set-state-in-effect` en `src/lib/useApiResource.ts`
+
+La implementación vigente del hook está en `src/hooks/useApiResource.ts`. El archivo
+`src/lib/useApiResource.ts` solo conserva una reexportación por compatibilidad con imports
+anteriores. Si ESLint muestra una llamada `if (enabled) void load()` dentro de
+`src/lib/useApiResource.ts`, la copia local está desactualizada o tiene cambios sin integrar.
+
+Desde la raíz del repositorio, comprueba y restaura exclusivamente ambos archivos:
+
+```bash
+git status --short -- frontend/src/lib/useApiResource.ts frontend/src/hooks/useApiResource.ts
+git restore --source=HEAD -- frontend/src/lib/useApiResource.ts frontend/src/hooks/useApiResource.ts
+npm ci --prefix frontend
+npm run lint --prefix frontend
+```
+
+La primera orden permite comprobar si se descartará algún cambio local. No ejecutes
+`git restore` si necesitas conservar esas modificaciones: guárdalas primero con `git diff`
+o `git stash`. El aviso de una nueva versión de npm es informativo y no causa este error.
+
 ## Desarrollo local
 
 Desde la raíz del repo:
