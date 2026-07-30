@@ -8,4 +8,7 @@ Operational backend setup, verification commands, migration workflow, outbox wor
 
 ## Frontend operations
 
-El frontend React/Vite vive en [`frontend/`](frontend/). Para desarrollo local: ejecutar `make seed-demo` en `backend` y luego `npm install && npm run dev` en `frontend`.
+El frontend React/Vite vive en [`frontend/`](frontend/). Puede iniciarse localmente con
+`npm install && npm run dev` desde `frontend/`, o como build estático en Nginx con
+`docker compose up -d --build frontend` desde la raíz. Antes de probar flujos demo,
+ejecuta `make seed-demo` en `backend`.

@@ -108,6 +108,33 @@ npm install
 npm run dev
 ```
 
+### Frontend con Docker Compose
+
+Desde la raíz del repositorio puedes compilar y levantar el frontend junto al backend:
+
+```bash
+docker compose up -d --build frontend
+docker compose ps frontend
+```
+
+El contenedor publica la aplicación en `http://localhost:5173`. Nginx sirve el build
+estático y redirige `/api`, `/health` y `/ready` al servicio `backend` dentro de la
+red de Compose, por lo que el navegador no necesita resolver el nombre interno del
+contenedor.
+
+Para reconstruir el frontend después de modificar su código:
+
+```bash
+docker compose up -d --build --force-recreate frontend
+```
+
+Para consultar sus logs o detenerlo:
+
+```bash
+docker compose logs -f frontend
+docker compose stop frontend
+```
+
 Abre:
 
 ```text
