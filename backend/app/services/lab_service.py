@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import select
@@ -37,8 +37,16 @@ class LabService:
         )
         self.db.add(orden)
         await self.db.flush()
-        for etapa in ETAPAS_ESTANDAR:
-            orden.etapas.append(OrdenLaboratorioEtapa(etapa=etapa, estado="PENDIENTE"))
+        created_at = datetime.now(timezone.utc)
+        self.db.add_all(
+            OrdenLaboratorioEtapa(
+                orden_id=orden.id,
+                etapa=etapa,
+                estado="PENDIENTE",
+                created_at=created_at + timedelta(microseconds=index),
+            )
+            for index, etapa in enumerate(ETAPAS_ESTANDAR)
+        )
         await self.db.flush()
         return await self.obtener_orden(empresa_id=empresa_id, orden_id=orden.id)
 
@@ -152,7 +160,11 @@ class LabService:
     async def listar_ordenes(self, *, empresa_id: UUID, skip: int = 0, limit: int = 50) -> list[OrdenLaboratorio]:
         result = await self.db.execute(
             select(OrdenLaboratorio)
-            .options(selectinload(OrdenLaboratorio.etapas))
+            .options(
+                selectinload(OrdenLaboratorio.etapas),
+                selectinload(OrdenLaboratorio.consumos),
+                selectinload(OrdenLaboratorio.controles_calidad),
+            )
             .where(OrdenLaboratorio.empresa_id == empresa_id)
             .order_by(OrdenLaboratorio.created_at.desc())
             .offset(skip)

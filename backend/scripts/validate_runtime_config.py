@@ -7,7 +7,16 @@ import argparse
 import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.parse import urlparse
+
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_ENV_FILES = (
+    BACKEND_ROOT.parent / ".env",
+    BACKEND_ROOT / ".env",
+    BACKEND_ROOT / ".env.local",
+)
 
 
 DEFAULT_INSECURE_SECRETS = {
@@ -16,6 +25,41 @@ DEFAULT_INSECURE_SECRETS = {
     "change-me",
     "secret",
 }
+
+
+def _strip_inline_comment(value: str) -> str:
+    in_single = False
+    in_double = False
+    for index, char in enumerate(value):
+        if char == "'" and not in_double:
+            in_single = not in_single
+        elif char == '"' and not in_single:
+            in_double = not in_double
+        elif char == "#" and not in_single and not in_double:
+            return value[:index].rstrip()
+    return value.strip()
+
+
+def _clean_env_value(value: str) -> str:
+    cleaned = _strip_inline_comment(value.strip())
+    if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {"'", '"'}:
+        return cleaned[1:-1]
+    return cleaned
+
+
+def load_env_file(path: Path, *, override: bool = False) -> int:
+    loaded = 0
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or (key in os.environ and not override):
+            continue
+        os.environ[key] = _clean_env_value(value)
+        loaded += 1
+    return loaded
 
 
 @dataclass(frozen=True)
@@ -49,10 +93,12 @@ class RuntimeConfigValidator:
         database_url = os.getenv("DATABASE_URL", "")
         if database_url and not database_url.startswith("postgresql+asyncpg://"):
             self._error("DATABASE_URL debe usar postgresql+asyncpg://")
+        if self._is_production() and "localhost" in database_url:
+            self._error("DATABASE_URL no debe apuntar a localhost en producción")
 
     def _validate_secret_strength(self) -> None:
         secret = os.getenv("SECRET_KEY", "")
-        if secret in DEFAULT_INSECURE_SECRETS:
+        if secret in DEFAULT_INSECURE_SECRETS or secret.startswith("change-me"):
             self._error("SECRET_KEY usa un valor inseguro de ejemplo")
         if self._is_production() and len(secret) < 32:
             self._error("SECRET_KEY debe tener al menos 32 caracteres en producción")
@@ -100,15 +146,33 @@ class RuntimeConfigValidator:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Validate backend runtime environment configuration")
-    parser.add_argument("--environment", default=os.getenv("ENVIRONMENT", "development"))
-    parser.add_argument("--strict", action="store_true", help="Treat warnings as deployment-blocking findings")
+    parser = argparse.ArgumentParser(
+        description="Validate backend runtime environment configuration"
+    )
+    parser.add_argument("--environment", default=None)
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat warnings as deployment-blocking findings",
+    )
+    parser.add_argument(
+        "--env-file",
+        action="append",
+        type=Path,
+        default=[],
+        help="Archivo .env a cargar antes de validar; puede repetirse",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    findings = RuntimeConfigValidator(environment=args.environment, strict=args.strict).validate()
+    env_files = args.env_file or [path for path in DEFAULT_ENV_FILES if path.exists()]
+    for env_file in env_files:
+        load_env_file(env_file)
+
+    environment = args.environment or os.getenv("ENVIRONMENT", "development")
+    findings = RuntimeConfigValidator(environment=environment, strict=args.strict).validate()
     errors = [finding for finding in findings if finding.level == "ERROR"]
     for finding in findings:
         print(f"{finding.level}: {finding.message}")
