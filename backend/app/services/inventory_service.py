@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -35,7 +35,19 @@ class InventoryService:
         producto = await self.db.get(Producto, producto_id)
         if producto is None or producto.empresa_id != empresa_id:
             raise ValueError("Producto inexistente para la empresa")
-        capa = CapaInventario(empresa_id=empresa_id, sucursal_id=sucursal_id, producto_id=producto_id, lote=lote, numero_serie=numero_serie, fecha_caducidad=fecha_caducidad, cantidad_inicial=cantidad, cantidad_disponible=cantidad, costo_unitario=costo_unitario, referencia=referencia)
+        capa = CapaInventario(
+            empresa_id=empresa_id,
+            sucursal_id=sucursal_id,
+            producto_id=producto_id,
+            lote=lote,
+            numero_serie=numero_serie,
+            fecha_caducidad=fecha_caducidad,
+            cantidad_inicial=cantidad,
+            cantidad_disponible=cantidad,
+            costo_unitario=costo_unitario,
+            referencia=referencia,
+            created_at=datetime.now(timezone.utc),
+        )
         self.db.add(capa)
         existencia.cantidad += cantidad
         existencia.valor_total += cantidad * costo_unitario
