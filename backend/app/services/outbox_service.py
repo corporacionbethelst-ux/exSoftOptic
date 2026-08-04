@@ -104,7 +104,7 @@ class OutboxService:
             event.status = self.STATUS_PENDING
             delay_seconds = retry_delay_seconds
             if delay_seconds is None:
-                delay_seconds = self.calculate_retry_delay_seconds(event.attempts)
+                delay_seconds = self.calculate_retry_delay_seconds(attempts=event.attempts)
             event.available_at = datetime.now(timezone.utc) + timedelta(seconds=delay_seconds)
         await self.db.flush()
         return event

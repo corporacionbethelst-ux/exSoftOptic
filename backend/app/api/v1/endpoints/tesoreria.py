@@ -13,6 +13,11 @@ from app.services.treasury_service import TreasuryService
 router = APIRouter()
 
 
+@router.get("/cuentas-bancarias", response_model=list[CuentaBancariaResponse], dependencies=[Depends(require_permissions(["tesoreria.cuentas.leer"]))])
+async def listar_cuentas_bancarias(skip: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await TreasuryService(db).listar_cuentas_bancarias(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
+
+
 @router.post("/cuentas-bancarias", response_model=CuentaBancariaResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["tesoreria.cuentas.crear"]))])
 async def crear_cuenta_bancaria(payload: CuentaBancariaCreate, db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
     try:

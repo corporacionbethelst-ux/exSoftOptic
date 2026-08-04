@@ -14,6 +14,28 @@ class PayrollService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+
+    async def listar_empleados(self, *, empresa_id: UUID, skip: int = 0, limit: int = 100) -> list[Empleado]:
+        result = await self.db.execute(
+            select(Empleado)
+            .where(Empleado.empresa_id == empresa_id)
+            .order_by(Empleado.numero_empleado.asc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
+    async def listar_periodos(self, *, empresa_id: UUID, skip: int = 0, limit: int = 100) -> list[NominaPeriodo]:
+        result = await self.db.execute(
+            select(NominaPeriodo)
+            .options(selectinload(NominaPeriodo.recibos))
+            .where(NominaPeriodo.empresa_id == empresa_id)
+            .order_by(NominaPeriodo.fecha_inicio.desc(), NominaPeriodo.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
     async def crear_empleado(self, *, empresa_id: UUID, payload: EmpleadoCreate) -> Empleado:
         empleado = Empleado(empresa_id=empresa_id, estado="ACTIVO", **payload.model_dump())
         self.db.add(empleado)
