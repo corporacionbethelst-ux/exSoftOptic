@@ -43,8 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const expireSession = () => setSession(null);
+    const syncSession = () => setSession(getStoredTokens());
+
     globalThis.addEventListener('exsoftoptic:auth-expired', expireSession);
-    return () => globalThis.removeEventListener('exsoftoptic:auth-expired', expireSession);
+    globalThis.addEventListener('exsoftoptic:auth-refreshed', syncSession);
+
+    return () => {
+      globalThis.removeEventListener('exsoftoptic:auth-expired', expireSession);
+      globalThis.removeEventListener('exsoftoptic:auth-refreshed', syncSession);
+    };
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
@@ -63,7 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user: session?.user ?? null, isAuthenticated: Boolean(session?.access_token), isBootstrapping, login, logout }),
+    () => ({
+      user: session?.user ?? null,
+      isAuthenticated: Boolean(session?.access_token),
+      isBootstrapping,
+      login,
+      logout,
+    }),
     [isBootstrapping, login, logout, session],
   );
 

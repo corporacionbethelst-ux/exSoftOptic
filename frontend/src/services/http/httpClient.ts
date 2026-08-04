@@ -30,6 +30,7 @@ async function refreshAccessToken(): Promise<boolean> {
 
     const tokens = await parseJson<RefreshTokenResponse>(response);
     storeTokens({ ...session, ...tokens, user: session.user });
+    globalThis.dispatchEvent(new Event('exsoftoptic:auth-refreshed'));
     return true;
   })()
     .catch(() => false)
