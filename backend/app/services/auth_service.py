@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 import hashlib
 import secrets
 from jose import JWTError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -57,7 +58,8 @@ class AuthService:
             refresh_token_hash=hashlib.sha256(refresh_token.encode()).hexdigest(),
             ip_address=ip,
             user_agent=user_agent[:500] if user_agent else None,
-            expira_en=datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            # La sesión permanece activa durante la vigencia del refresh token.
+            expira_en=datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         )
         db.add(sesion)
         await db.flush()
@@ -118,6 +120,7 @@ class AuthService:
             sesion.token_hash = hashlib.sha256(new_access_token.encode()).hexdigest()
             sesion.refresh_token_hash = hashlib.sha256(new_refresh_token.encode()).hexdigest()
             sesion.ultima_actividad = datetime.utcnow()
+            sesion.expira_en = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
             await db.flush()
             
             return {
@@ -252,7 +255,6 @@ class AuthService:
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         
         # Buscar usuario con este token
-        from sqlalchemy import select
         result = await db.execute(
             select(Usuario).where(Usuario.deleted_at.is_(None))
         )

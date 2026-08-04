@@ -25,6 +25,26 @@ class ProductoCreate(BaseModel):
     es_servicio: bool = False
 
 
+class ProductoUpdate(BaseModel):
+    categoria_id: UUID | None = None
+    marca_id: UUID | None = None
+    sku: str | None = Field(None, min_length=1, max_length=50)
+    codigo_barras: str | None = Field(None, max_length=50)
+    nombre: str | None = Field(None, min_length=1, max_length=200)
+    descripcion: str | None = Field(None, max_length=500)
+    tipo_producto: str | None = None
+    unidad_medida: str | None = None
+    atributos_opticos: dict | None = None
+    costo_estandar: Decimal | None = Field(None, ge=0)
+    precio_venta: Decimal | None = Field(None, ge=0)
+    metodo_costeo: str | None = None
+    stock_minimo: Decimal | None = Field(None, ge=0)
+    requiere_receta: bool | None = None
+    requiere_lote: bool | None = None
+    requiere_serie: bool | None = None
+    es_servicio: bool | None = None
+
+
 class ProductoResponse(ProductoCreate):
     model_config = ConfigDict(from_attributes=True)
     id: UUID

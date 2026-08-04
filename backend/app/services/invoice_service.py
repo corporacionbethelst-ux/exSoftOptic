@@ -39,17 +39,19 @@ class InvoiceService:
             )
             self.db.add(factura)
             await self.db.flush()
-            for linea in venta.lineas:
-                factura.lineas.append(
-                    FacturaLinea(
-                        producto_id=linea.producto_id,
-                        descripcion=linea.descripcion,
-                        cantidad=linea.cantidad,
-                        precio_unitario=linea.precio_unitario,
-                        descuento=linea.descuento,
-                        importe=linea.importe,
-                    )
+            factura_lineas = [
+                FacturaLinea(
+                    factura_id=factura.id,
+                    producto_id=linea.producto_id,
+                    descripcion=linea.descripcion,
+                    cantidad=linea.cantidad,
+                    precio_unitario=linea.precio_unitario,
+                    descuento=linea.descuento,
+                    importe=linea.importe,
                 )
+                for linea in venta.lineas
+            ]
+            self.db.add_all(factura_lineas)
             await self.db.flush()
             provider = get_einvoicing_provider(factura.proveedor)
             result = await provider.issue_invoice(
@@ -70,7 +72,7 @@ class InvoiceService:
                             descuento=linea.descuento,
                             importe=linea.importe,
                         )
-                        for linea in factura.lineas
+                        for linea in factura_lineas
                     ],
                 )
             )
@@ -115,11 +117,24 @@ class InvoiceService:
             await self.db.flush()
         return await self.obtener_factura(empresa_id=empresa_id, factura_id=factura_id)
 
+
+    async def listar_facturas(self, *, empresa_id: UUID, skip: int = 0, limit: int = 50) -> list[Factura]:
+        result = await self.db.execute(
+            select(Factura)
+            .options(selectinload(Factura.lineas), selectinload(Factura.eventos))
+            .where(Factura.empresa_id == empresa_id)
+            .order_by(Factura.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
     async def obtener_factura(self, *, empresa_id: UUID, factura_id: UUID) -> Factura:
         result = await self.db.execute(
             select(Factura)
             .options(selectinload(Factura.lineas), selectinload(Factura.eventos))
             .where(Factura.empresa_id == empresa_id, Factura.id == factura_id)
+            .execution_options(populate_existing=True)
         )
         factura = result.scalar_one_or_none()
         if factura is None:

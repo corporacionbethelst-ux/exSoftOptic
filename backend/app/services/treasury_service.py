@@ -15,6 +15,17 @@ class TreasuryService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+
+    async def listar_cuentas_bancarias(self, *, empresa_id: UUID, skip: int = 0, limit: int = 100) -> list[CuentaBancaria]:
+        result = await self.db.execute(
+            select(CuentaBancaria)
+            .where(CuentaBancaria.empresa_id == empresa_id)
+            .order_by(CuentaBancaria.banco.asc(), CuentaBancaria.numero_cuenta.asc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
+
     async def crear_cuenta_bancaria(self, *, empresa_id: UUID, payload: CuentaBancariaCreate) -> CuentaBancaria:
         cuenta = await self.db.get(CuentaContable, payload.cuenta_contable_id)
         if cuenta is None or cuenta.empresa_id != empresa_id:
