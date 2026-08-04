@@ -6,7 +6,7 @@ export type AuthContextValue = {
   isAuthenticated: boolean;
   isBootstrapping: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

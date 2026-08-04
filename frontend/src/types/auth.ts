@@ -60,6 +60,8 @@ export type LoginResponse = {
   user: Usuario;
 };
 
+export type RefreshTokenResponse = Omit<LoginResponse, 'user'>;
+
 export type PaginatedUsers = {
   total: number;
   page: number;

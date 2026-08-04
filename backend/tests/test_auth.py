@@ -2,8 +2,11 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_password_hash
-from app.models.usuario import Usuario, Rol
+from app.models.usuario import Usuario, Rol, Sesion
 from app.models.empresa import Empresa
+from app.core.config import settings
+from datetime import datetime, timedelta
+from sqlalchemy import select
 import uuid
 
 @pytest.mark.asyncio
@@ -53,6 +56,10 @@ async def test_login_success(client: AsyncClient, db_session: AsyncSession):
     assert "access_token" in data
     assert "refresh_token" in data
     assert data["token_type"] == "bearer"
+
+    session = (await db_session.execute(select(Sesion).where(Sesion.usuario_id == user.id))).scalar_one()
+    minimum_refresh_expiry = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS - 1)
+    assert session.expira_en.replace(tzinfo=None) > minimum_refresh_expiry
 
 @pytest.mark.asyncio
 async def test_login_invalid_credentials(client: AsyncClient):

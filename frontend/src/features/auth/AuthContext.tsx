@@ -41,15 +41,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    const expireSession = () => setSession(null);
+    globalThis.addEventListener('exsoftoptic:auth-expired', expireSession);
+    return () => globalThis.removeEventListener('exsoftoptic:auth-expired', expireSession);
+  }, []);
+
   const login = useCallback(async (username: string, password: string) => {
     const response = await authService.login({ username, password });
     storeTokens(response);
     setSession(response);
   }, []);
 
-  const logout = useCallback(() => {
-    clearStoredTokens();
-    setSession(null);
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } finally {
+      clearStoredTokens();
+      setSession(null);
+    }
   }, []);
 
   const value = useMemo(
