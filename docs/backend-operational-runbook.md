@@ -215,11 +215,19 @@ Create a PostgreSQL custom-format backup:
 make db-backup
 ```
 
+Every successful backup now creates a sibling `.dump.sha256` manifest. Verify it before transferring or restoring:
+
+```bash
+make db-backup-verify file=./backups/exsoftoptic-backend-YYYYMMDDTHHMMSSZ.dump
+```
+
 Restore a backup into the configured `DATABASE_URL`:
 
 ```bash
 make db-restore file=./backups/exsoftoptic-backend-YYYYMMDDTHHMMSSZ.dump
 ```
+
+The Makefile restore target requires a valid SHA-256 manifest and refuses a missing or modified backup. Database passwords are passed to PostgreSQL tools through `PGPASSWORD`, not exposed in command-line arguments.
 
 Dry-run the generated commands without touching the database:
 
