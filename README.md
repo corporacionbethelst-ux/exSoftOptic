@@ -7,6 +7,8 @@ Antes de levantar Docker Compose por primera vez, copia `.env.example` a `.env` 
 
 Operational backend setup, verification commands, migration workflow, outbox worker usage, production integrations and release checklist are documented in [`docs/backend-operational-runbook.md`](docs/backend-operational-runbook.md).
 
+El avance hacia producción se controla con la [ruta de producción en 15 fases](docs/production-roadmap.md). Ejecute `make readiness-fast` para la puerta local sin servicios o `make readiness` para la validación completa con Docker, pruebas backend y migraciones.
+
 
 ## Frontend operations
 
