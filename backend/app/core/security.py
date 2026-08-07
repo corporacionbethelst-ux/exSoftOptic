@@ -1,8 +1,18 @@
 from datetime import datetime, timedelta
+import secrets
+from types import SimpleNamespace
 from typing import Optional, Dict, Any
+
+import bcrypt
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+
 from app.core.config import settings
+
+if not hasattr(bcrypt, "__about__"):
+    # Passlib 1.7.x reads this legacy attribute when initializing bcrypt.
+    # bcrypt>=4.1 removed it, so provide a small compatibility shim.
+    bcrypt.__about__ = SimpleNamespace(__version__=bcrypt.__version__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -14,7 +24,10 @@ def get_password_hash(password: str) -> str:
     """Hashear contraseña"""
     return pwd_context.hash(password)
 
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    data: Dict[str, Any],
+    expires_delta: Optional[timedelta] = None,
+) -> str:
     """Crear token de acceso"""
     to_encode = data.copy()
     
@@ -23,7 +36,11 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    to_encode.update({"exp": expire, "type": "access"})
+    to_encode.update({
+        "exp": expire,
+        "type": "access",
+        "jti": secrets.token_urlsafe(16),
+    })
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
@@ -31,7 +48,11 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
     """Crear token de refresh"""
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "type": "refresh"})
+    to_encode.update({
+        "exp": expire,
+        "type": "refresh",
+        "jti": secrets.token_urlsafe(16),
+    })
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
