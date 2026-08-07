@@ -11,7 +11,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 3 | Configuración y secretos | En curso | Integrar un gestor de secretos real |
 | 4 | Seguridad de aplicación | Parcial | Revisar resultados CodeQL, ejecutar DAST y pentest |
 | 5 | Datos, migraciones y recuperación | En curso | Ensayo documentado de restauración en base desechable |
-| 6 | Infraestructura productiva | Pendiente | Definir plataforma, TLS, DNS y aislamiento de red |
+| 6 | Infraestructura productiva | En curso | Definir plataforma destino, TLS, DNS y proxy perimetral |
 | 7 | Observabilidad | Parcial | Dashboards, alertas y trazas en plataforma destino |
 | 8 | Rendimiento y capacidad | Pendiente | Pruebas representativas y objetivos SLO |
 | 9 | Resiliencia e integraciones | Parcial | Fallos inyectados, reintentos y circuit breakers validados |
@@ -77,6 +77,18 @@ make readiness
 - [ ] Ejecutar mensualmente un restore completo sobre una base desechable.
 - [ ] Medir y documentar RPO/RTO aprobados por negocio.
 - [ ] Replicar backups cifrados fuera del host y probar su recuperación.
+
+## Avance de la fase 6
+
+- [x] Existe un Compose productivo separado, sin montajes de código ni servidores con reload.
+- [x] PostgreSQL, Redis y MongoDB no publican puertos al host y viven en una red interna.
+- [x] Redis exige autenticación y todos los secretos críticos son obligatorios al renderizar Compose.
+- [x] Backend y frontend usan filesystem de solo lectura, `no-new-privileges` y capacidades reducidas.
+- [x] Nginx se ejecuta sin privilegios, incluye cabeceras de seguridad y caché inmutable de assets.
+- [x] CI renderiza Compose y construye las imágenes de aplicación.
+- [ ] Instalar proxy/LB perimetral con TLS, certificados renovables y límite de solicitudes.
+- [ ] Definir DNS, firewall, segmentación por ambiente y almacenamiento administrado.
+- [ ] Definir estrategia de escalamiento, presupuesto y alta disponibilidad.
 
 ## Regla de avance
 

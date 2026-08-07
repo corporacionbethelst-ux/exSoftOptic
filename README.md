@@ -11,6 +11,8 @@ El avance hacia producción se controla con la [ruta de producción en 15 fases]
 
 Para crear una configuración inicial con secretos aleatorios ejecute `make env-production-init domain=app.example.com`; después reemplace las credenciales de proveedores por referencias de su gestor de secretos y valide con `make config-production-audit`.
 
+La topología endurecida se encuentra en `docker-compose.production.yml`. Valídela con `make compose-production-check`, ejecute migraciones con el perfil `migration` y publique únicamente el frontend detrás de un proxy TLS.
+
 
 ## Frontend operations
 

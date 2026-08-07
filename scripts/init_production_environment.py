@@ -19,6 +19,7 @@ def token(length: int = 32) -> str:
 def render(*, domain: str, postgres_host: str, mongo_host: str, redis_host: str) -> str:
     postgres_password = token()
     mongo_password = token()
+    redis_password = token()
     secret_key = token(48)
     pg_encoded = quote(postgres_password, safe="")
     mongo_encoded = quote(mongo_password, safe="")
@@ -33,7 +34,8 @@ OPTICA_MONGO_PASSWORD={mongo_password}
 OPTICA_MONGO_DB=optica_clinico
 
 DATABASE_URL=postgresql+asyncpg://optica_user:{pg_encoded}@{postgres_host}:5432/optica_system
-REDIS_URL=redis://{redis_host}:6379/0
+REDIS_PASSWORD={redis_password}
+REDIS_URL=redis://:{quote(redis_password, safe="")}@{redis_host}:6379/0
 MONGODB_URL=mongodb://optica_admin:{mongo_encoded}@{mongo_host}:27017/optica_clinico?authSource=admin
 
 ENVIRONMENT=production
@@ -57,6 +59,8 @@ BANKING_TIMEOUT_SECONDS=10
 BANKING_RETRY_ATTEMPTS=3
 
 VITE_API_BASE_URL=
+APP_BIND_ADDRESS=127.0.0.1
+APP_PORT=8080
 """
 
 
