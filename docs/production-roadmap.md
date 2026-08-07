@@ -7,9 +7,9 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | Fase | Alcance | Estado | Criterio pendiente principal |
 | --- | --- | --- | --- |
 | 1 | Base funcional y contratos API | En cierre | Ejecutar suite completa y smoke manual en entorno reproducible |
-| 2 | Automatización CI y puertas de calidad | En curso | Activar protección de rama y exigir CI backend/frontend |
-| 3 | Configuración y secretos | Parcial | Integrar un gestor de secretos real |
-| 4 | Seguridad de aplicación | Parcial | Revisión OWASP, SAST/DAST y pentest |
+| 2 | Automatización CI y puertas de calidad | En cierre | Activar protección de rama y exigir CI backend/frontend |
+| 3 | Configuración y secretos | En curso | Integrar un gestor de secretos real |
+| 4 | Seguridad de aplicación | Parcial | Revisar resultados CodeQL, ejecutar DAST y pentest |
 | 5 | Datos, migraciones y recuperación | Parcial | Ensayo documentado de restauración |
 | 6 | Infraestructura productiva | Pendiente | Definir plataforma, TLS, DNS y aislamiento de red |
 | 7 | Observabilidad | Parcial | Dashboards, alertas y trazas en plataforma destino |
@@ -50,6 +50,23 @@ make readiness
 - [x] Dependabot está configurado para npm, pip y GitHub Actions.
 - [ ] El análisis de dependencias y alertas de seguridad está habilitado en el proveedor Git.
 - [ ] Se define quién puede aprobar excepciones y por cuánto tiempo.
+
+## Avance de la fase 3
+
+- [x] Existe plantilla versionada sin secretos reales.
+- [x] Existe generación criptográficamente segura de `.env` con permisos `0600`.
+- [x] La auditoría bloquea debug, algoritmos JWT inválidos, localhost y credenciales de ejemplo en producción.
+- [x] Las reglas críticas de configuración tienen pruebas automatizadas.
+- [ ] Las credenciales se inyectan desde Vault, AWS Secrets Manager, Azure Key Vault o equivalente.
+- [ ] Existe procedimiento probado de rotación de JWT, base de datos, MongoDB y proveedores.
+- [ ] Los accesos a secretos dejan trazabilidad y aplican mínimo privilegio.
+
+## Avance de la fase 4
+
+- [x] CodeQL analiza Python y TypeScript en push, pull request y semanalmente.
+- [ ] Revisar y resolver todos los hallazgos altos/críticos de CodeQL.
+- [ ] Incorporar DAST contra staging y revisión de cabeceras HTTP/TLS.
+- [ ] Ejecutar pentest independiente y cerrar los hallazgos de severidad alta/crítica.
 
 ## Regla de avance
 

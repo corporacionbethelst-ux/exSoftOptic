@@ -26,6 +26,43 @@ DEFAULT_INSECURE_SECRETS = {
     "secret",
 }
 
+PLACEHOLDER_MARKERS = ("change-me", "tu_", "example", "password_2026")
+
+
+def _strip_inline_comment(value: str) -> str:
+    in_single = False
+    in_double = False
+    for index, char in enumerate(value):
+        if char == "'" and not in_double:
+            in_single = not in_single
+        elif char == '"' and not in_single:
+            in_double = not in_double
+        elif char == "#" and not in_single and not in_double:
+            return value[:index].rstrip()
+    return value.strip()
+
+
+def _clean_env_value(value: str) -> str:
+    cleaned = _strip_inline_comment(value.strip())
+    if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {"'", '"'}:
+        return cleaned[1:-1]
+    return cleaned
+
+
+def load_env_file(path: Path, *, override: bool = False) -> int:
+    loaded = 0
+    for raw_line in path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or (key in os.environ and not override):
+            continue
+        os.environ[key] = _clean_env_value(value)
+        loaded += 1
+    return loaded
+
 
 def _strip_inline_comment(value: str) -> str:
     in_single = False
@@ -80,6 +117,8 @@ class RuntimeConfigValidator:
         self._validate_required("REDIS_URL")
         self._validate_database_url()
         self._validate_secret_strength()
+        self._validate_production_flags()
+        self._validate_service_urls()
         self._validate_provider("CFDI", default_allowed={"development", "test", "local"})
         self._validate_provider("BANKING", default_allowed={"development", "test", "local"})
         self._validate_cors()
@@ -103,6 +142,25 @@ class RuntimeConfigValidator:
         if self._is_production() and len(secret) < 32:
             self._error("SECRET_KEY debe tener al menos 32 caracteres en producción")
 
+    def _validate_production_flags(self) -> None:
+        debug = os.getenv("DEBUG", "false").strip().lower()
+        if self._is_production() and debug not in {"false", "0", "no", "off"}:
+            self._error("DEBUG debe estar deshabilitado en producción")
+        algorithm = os.getenv("ALGORITHM", "HS256").upper()
+        if algorithm not in {"HS256", "HS384", "HS512"}:
+            self._error("ALGORITHM debe ser HS256, HS384 o HS512")
+
+    def _validate_service_urls(self) -> None:
+        if not self._is_production():
+            return
+        for key in ("DATABASE_URL", "MONGODB_URL", "REDIS_URL"):
+            value = os.getenv(key, "")
+            lowered = value.lower()
+            if "localhost" in lowered or "127.0.0.1" in lowered:
+                self._error(f"{key} no debe apuntar a localhost en producción")
+            if any(marker in lowered for marker in PLACEHOLDER_MARKERS):
+                self._error(f"{key} contiene credenciales o valores de ejemplo")
+
     def _validate_provider(self, prefix: str, *, default_allowed: set[str]) -> None:
         provider = os.getenv(f"{prefix}_PROVIDER", "").upper()
         api_url = os.getenv(f"{prefix}_API_URL", "")
@@ -114,6 +172,11 @@ class RuntimeConfigValidator:
                 self._error(f"{prefix}_API_URL es obligatorio cuando {prefix}_PROVIDER={provider}")
             if not api_key:
                 self._error(f"{prefix}_API_KEY es obligatorio cuando {prefix}_PROVIDER={provider}")
+            elif self._is_production() and any(
+                marker in api_key.lower()
+                for marker in (*PLACEHOLDER_MARKERS, "replace-with")
+            ):
+                self._error(f"{prefix}_API_KEY contiene un valor de ejemplo")
         if provider in {"MOCK", "CSV"} and self.environment not in default_allowed:
             self._error(f"{prefix}_PROVIDER={provider} no debe usarse en {self.environment}")
         if timeout:

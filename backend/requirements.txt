@@ -1,45 +1,45 @@
 # Web Framework
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-python-multipart==0.0.20
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+python-multipart==0.0.32
 
 # Database
-sqlalchemy[asyncio]==2.0.36
+sqlalchemy[asyncio]==2.0.51
 asyncpg==0.30.0; python_version < "3.14"
 asyncpg @ git+https://github.com/MagicStack/asyncpg.git@master; python_version >= "3.14"
-alembic==1.14.0
+alembic==1.18.5
 psycopg2-binary==2.9.10; python_version < "3.14"
 psycopg @ git+https://github.com/psycopg/psycopg.git; python_version >= "3.14"
 
 # MongoDB
-motor==3.7.0
-pymongo==4.10.1
+motor==3.7.1
+pymongo==4.17.0
 
 # Redis
 redis==5.2.1
 
 # Authentication
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
-bcrypt==4.1.2
+bcrypt==5.0.0
 #bcrypt==4.0.1
 
 # Validation
-pydantic==2.10.3
+pydantic==2.13.4
 pydantic-core @ git+https://github.com/pydantic/pydantic-core.git@main; python_version >= "3.14"
 pydantic-core==2.27.1; python_version < "3.14"
-pydantic-settings==2.7.0
-email-validator==2.2.0
+pydantic-settings==2.14.2
+email-validator==2.3.0
 
 # Background Tasks
-celery==5.4.0
+celery==5.6.3
 
 # HTTP Client
 httpx==0.28.1
 
 # Utilities
-python-dotenv==1.0.1
-structlog==25.1.0
+python-dotenv==1.2.2
+structlog==26.1.0
 loguru==0.7.3
 python-dateutil==2.9.0.post0
 
@@ -60,5 +60,5 @@ factory-boy==3.3.1
 # Development
 black==24.10.0
 isort==5.13.2
-flake8==7.1.1
+flake8==7.3.0
 mypy==1.14.0
