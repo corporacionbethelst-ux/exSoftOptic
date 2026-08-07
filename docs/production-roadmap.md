@@ -10,7 +10,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 2 | Automatización CI y puertas de calidad | En cierre | Activar protección de rama y exigir CI backend/frontend |
 | 3 | Configuración y secretos | En curso | Integrar un gestor de secretos real |
 | 4 | Seguridad de aplicación | Parcial | Revisar resultados CodeQL, ejecutar DAST y pentest |
-| 5 | Datos, migraciones y recuperación | Parcial | Ensayo documentado de restauración |
+| 5 | Datos, migraciones y recuperación | En curso | Ensayo documentado de restauración en base desechable |
 | 6 | Infraestructura productiva | Pendiente | Definir plataforma, TLS, DNS y aislamiento de red |
 | 7 | Observabilidad | Parcial | Dashboards, alertas y trazas en plataforma destino |
 | 8 | Rendimiento y capacidad | Pendiente | Pruebas representativas y objetivos SLO |
@@ -67,6 +67,16 @@ make readiness
 - [ ] Revisar y resolver todos los hallazgos altos/críticos de CodeQL.
 - [ ] Incorporar DAST contra staging y revisión de cabeceras HTTP/TLS.
 - [ ] Ejecutar pentest independiente y cerrar los hallazgos de severidad alta/crítica.
+
+## Avance de la fase 5
+
+- [x] Los backups usan formato custom, sin ownership ni privilegios del origen.
+- [x] Las contraseñas de PostgreSQL se pasan mediante `PGPASSWORD` y no aparecen en argumentos o logs.
+- [x] Cada backup genera un manifiesto SHA-256 y el restore productivo exige su validación.
+- [x] Existen pruebas de detección de manipulación del backup.
+- [ ] Ejecutar mensualmente un restore completo sobre una base desechable.
+- [ ] Medir y documentar RPO/RTO aprobados por negocio.
+- [ ] Replicar backups cifrados fuera del host y probar su recuperación.
 
 ## Regla de avance
 

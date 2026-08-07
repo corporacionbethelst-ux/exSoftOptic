@@ -1,4 +1,4 @@
-.PHONY: help install dev test-env-init test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migration-audit migrate-verify security-audit api-contract-audit config-audit permissions-catalog role-seed seed-roles seed-test-data seed-demo rbac-audit pagination-audit openapi-export operational-cleanup db-backup db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean db-up docker-up docker-down
+.PHONY: help install dev test-env-init test-readiness test-services-up test-services-wait test-services-down test-services-logs verify verify-fast ci e2e load-smoke migration-audit migrate-verify security-audit api-contract-audit config-audit permissions-catalog role-seed seed-roles seed-test-data seed-demo rbac-audit pagination-audit openapi-export operational-cleanup db-backup db-backup-verify db-restore outbox-worker-once outbox-worker test lint format run migrate seed clean db-up docker-up docker-down
 
 help:  ## Mostrar ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -87,8 +87,11 @@ operational-cleanup:  ## Limpiar idempotency/outbox: make operational-cleanup em
 db-backup:  ## Crear backup PostgreSQL custom-format en ./backups
 	python scripts/manage_database_backup.py backup
 
+db-backup-verify:  ## Verificar checksum: make db-backup-verify file=./backups/archivo.dump
+	python scripts/manage_database_backup.py verify --input "$(file)"
+
 db-restore:  ## Restaurar backup PostgreSQL: make db-restore file=./backups/archivo.dump
-	python scripts/manage_database_backup.py restore --input "$(file)" --clean
+	python scripts/manage_database_backup.py restore --input "$(file)" --clean --require-checksum
 
 outbox-worker-once:  ## Despachar un lote del outbox y salir
 	python scripts/run_outbox_worker.py --once

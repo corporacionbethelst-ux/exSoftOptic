@@ -64,41 +64,6 @@ def load_env_file(path: Path, *, override: bool = False) -> int:
     return loaded
 
 
-def _strip_inline_comment(value: str) -> str:
-    in_single = False
-    in_double = False
-    for index, char in enumerate(value):
-        if char == "'" and not in_double:
-            in_single = not in_single
-        elif char == '"' and not in_single:
-            in_double = not in_double
-        elif char == "#" and not in_single and not in_double:
-            return value[:index].rstrip()
-    return value.strip()
-
-
-def _clean_env_value(value: str) -> str:
-    cleaned = _strip_inline_comment(value.strip())
-    if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in {"'", '"'}:
-        return cleaned[1:-1]
-    return cleaned
-
-
-def load_env_file(path: Path, *, override: bool = False) -> int:
-    loaded = 0
-    for raw_line in path.read_text().splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        if not key or (key in os.environ and not override):
-            continue
-        os.environ[key] = _clean_env_value(value)
-        loaded += 1
-    return loaded
-
-
 @dataclass(frozen=True)
 class Finding:
     level: str
