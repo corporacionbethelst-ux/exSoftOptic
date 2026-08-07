@@ -1,0 +1,18 @@
+.PHONY: help readiness readiness-fast frontend-check compose-check
+
+help: ## Mostrar comandos de verificacion del proyecto
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'
+
+readiness-fast: ## Ejecutar verificaciones estaticas de backend y frontend
+	bash scripts/production_readiness.sh --fast
+
+readiness: ## Ejecutar la puerta completa previa a staging/produccion
+	bash scripts/production_readiness.sh --full
+
+frontend-check: ## Ejecutar lint, tipos y build del frontend
+	npm --prefix frontend run lint
+	npm --prefix frontend run typecheck
+	npm --prefix frontend run build
+
+compose-check: ## Validar la configuracion Docker Compose renderizada
+	docker compose config --quiet
