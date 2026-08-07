@@ -9,6 +9,8 @@ Operational backend setup, verification commands, migration workflow, outbox wor
 
 El avance hacia producción se controla con la [ruta de producción en 15 fases](docs/production-roadmap.md). Ejecute `make readiness-fast` para la puerta local sin servicios o `make readiness` para la validación completa con Docker, pruebas backend y migraciones.
 
+Para crear una configuración inicial con secretos aleatorios ejecute `make env-production-init domain=app.example.com`; después reemplace las credenciales de proveedores por referencias de su gestor de secretos y valide con `make config-production-audit`.
+
 
 ## Frontend operations
 
