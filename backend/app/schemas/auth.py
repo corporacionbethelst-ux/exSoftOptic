@@ -1,6 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 import re
 
 # ============================================================================
@@ -10,7 +11,7 @@ import re
 class LoginRequest(BaseModel):
     """Schema para login"""
     username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=6, max_length=100)
+    password: str = Field(..., min_length=1, max_length=100)
 
 class LoginResponse(BaseModel):
     """Respuesta del login"""
@@ -99,17 +100,22 @@ class UsuarioUpdate(BaseModel):
 
 class UsuarioResponse(UsuarioBase):
     """Respuesta de usuario"""
-    id: str
-    rol_id: str
-    sucursal_id: Optional[str] = None
-    empresa_id: str
-    esta_activo: bool
-    email_verificado: bool
+    id: UUID
+    rol_id: UUID
+    sucursal_id: Optional[UUID] = None
+    empresa_id: UUID
+    esta_activo: bool = True
+    email_verificado: bool = False
     ultimo_acceso: Optional[datetime] = None
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    @field_validator("esta_activo", "email_verificado", mode="before")
+    def normalizar_booleanos_nulos(cls, value, info):
+        if value is None:
+            return True if info.field_name == "esta_activo" else False
+        return value
+
+    model_config = ConfigDict(from_attributes=True)
 
 class UsuarioListResponse(BaseModel):
     """Lista de usuarios con paginación"""
@@ -137,14 +143,13 @@ class RolCreate(RolBase):
     permisos: list[str] = []
 
 class RolResponse(RolBase):
-    id: str
+    id: UUID
     es_sistema: bool
     permisos: list[str] = []
-    esta_activo: bool
+    esta_activo: bool = Field(default=True, validation_alias="is_active")
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Actualizar forward references
 LoginResponse.model_rebuild()

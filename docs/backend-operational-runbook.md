@@ -199,6 +199,14 @@ GET /api/v1/observabilidad/metrics
 GET /api/v1/observabilidad/metrics/prometheus
 ```
 
+Prometheus should scrape the dedicated internal endpoint with a separate bearer token:
+
+```bash
+curl -H "Authorization: Bearer $METRICS_TOKEN" http://backend:8000/metrics
+```
+
+Starter scrape configuration and alerts live in `ops/prometheus/`. Mount `METRICS_TOKEN` as a secret file for Prometheus; do not reuse a user JWT or expose `/metrics` through the public reverse proxy.
+
 Use the JSON endpoint for quick operator inspection and the Prometheus text endpoint for internal scrapers. Monitor at least:
 
 - `exsoftoptic_requests_total` for traffic volume.
@@ -215,11 +223,19 @@ Create a PostgreSQL custom-format backup:
 make db-backup
 ```
 
+Every successful backup now creates a sibling `.dump.sha256` manifest. Verify it before transferring or restoring:
+
+```bash
+make db-backup-verify file=./backups/exsoftoptic-backend-YYYYMMDDTHHMMSSZ.dump
+```
+
 Restore a backup into the configured `DATABASE_URL`:
 
 ```bash
 make db-restore file=./backups/exsoftoptic-backend-YYYYMMDDTHHMMSSZ.dump
 ```
+
+The Makefile restore target requires a valid SHA-256 manifest and refuses a missing or modified backup. Database passwords are passed to PostgreSQL tools through `PGPASSWORD`, not exposed in command-line arguments.
 
 Dry-run the generated commands without touching the database:
 
