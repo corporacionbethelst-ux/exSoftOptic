@@ -65,6 +65,8 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "./logs/app.log"
+    LOG_FORMAT: str = "text"
+    METRICS_TOKEN: str = ""
     
     class Config:
         env_file = ".env"

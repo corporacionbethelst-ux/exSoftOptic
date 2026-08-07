@@ -50,3 +50,20 @@ async def test_tesoreria_concilia_movimiento_con_asiento_balanceado(db_session):
     assert movimiento.asiento_id == asiento.id
     assert movimiento.conciliado_en is not None
     assert await service.listar_movimientos_pendientes(empresa_id=empresa.id) == []
+
+
+@pytest.mark.asyncio
+async def test_tesoreria_lista_cuentas_bancarias_ordenadas_por_banco(db_session):
+    empresa = Empresa(id=uuid.uuid4(), razon_social="Treasury List SA", rfc="TRL260619AA1", regimen_fiscal="601", codigo_postal="06600")
+    bancos = CuentaContable(id=uuid.uuid4(), empresa_id=empresa.id, codigo="102.02", nombre="Bancos", tipo="ACTIVO", naturaleza="DEUDORA")
+    db_session.add_all([empresa, bancos])
+    await db_session.flush()
+
+    service = TreasuryService(db_session)
+    await service.crear_cuenta_bancaria(empresa_id=empresa.id, payload=CuentaBancariaCreate(cuenta_contable_id=bancos.id, banco="Zeta Bank", numero_cuenta="002"))
+    await service.crear_cuenta_bancaria(empresa_id=empresa.id, payload=CuentaBancariaCreate(cuenta_contable_id=bancos.id, banco="Alpha Bank", numero_cuenta="001"))
+
+    cuentas = await service.listar_cuentas_bancarias(empresa_id=empresa.id)
+
+    assert [cuenta.banco for cuenta in cuentas] == ["Alpha Bank", "Zeta Bank"]
+    assert [cuenta.numero_cuenta for cuenta in cuentas] == ["001", "002"]
