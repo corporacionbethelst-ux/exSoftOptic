@@ -13,7 +13,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 5 | Datos, migraciones y recuperación | En curso | Ensayo documentado de restauración en base desechable |
 | 6 | Infraestructura productiva | En curso | Definir plataforma destino, TLS, DNS y proxy perimetral |
 | 7 | Observabilidad | En curso | Instalar Prometheus/log aggregation y validar alertas |
-| 8 | Rendimiento y capacidad | Pendiente | Pruebas representativas y objetivos SLO |
+| 8 | Rendimiento y capacidad | En curso | Ejecutar baseline y prueba sostenida con datos representativos |
 | 9 | Resiliencia e integraciones | Parcial | Fallos inyectados, reintentos y circuit breakers validados |
 | 10 | Calidad funcional E2E | Pendiente | Automatizar recorridos críticos del navegador |
 | 11 | Cumplimiento y privacidad | Pendiente | Políticas de retención, consentimiento y derechos ARCO |
@@ -101,6 +101,18 @@ make readiness
 - [ ] Desplegar Prometheus/Grafana y agregación central de logs en la plataforma elegida.
 - [ ] Conectar Alertmanager con guardias y probar cada alerta mediante simulacro.
 - [ ] Incorporar trazas distribuidas OpenTelemetry en API, workers y proveedores externos.
+
+## Avance de la fase 8
+
+- [x] Existe un plan SLO versionado para staging con error, p95, p99 y throughput mínimo.
+- [x] El runner soporta múltiples URLs, warmup, concurrencia, timeout y headers autenticados.
+- [x] Los resultados incluyen percentiles, RPS, códigos HTTP, errores y artefacto JSON.
+- [x] Una regresión de cualquiera de los umbrales produce código de salida no cero para CI.
+- [x] Las funciones de resumen, umbrales y carga de planes tienen pruebas automatizadas.
+- [x] CI ejecuta el smoke SLO y conserva el resultado JSON como artefacto.
+- [ ] Ejecutar baseline sobre endpoints de negocio y dataset con volumen representativo.
+- [ ] Ejecutar soak test de 2–8 horas y verificar memoria, conexiones y crecimiento de colas.
+- [ ] Aprobar capacidad máxima, margen de seguridad y estrategia de escalamiento.
 
 ## Regla de avance
 

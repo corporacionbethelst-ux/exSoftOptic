@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - "ops/performance/**"
       - ".github/workflows/backend-ci.yml"
   push:
     branches:
@@ -12,6 +13,7 @@ on:
       - develop
     paths:
       - "backend/**"
+      - "ops/performance/**"
       - ".github/workflows/backend-ci.yml"
 
 jobs:
@@ -109,3 +111,23 @@ jobs:
       - name: Run API/database smoke E2E tests
         working-directory: backend
         run: python -m pytest tests/test_e2e_smoke.py -q
+
+      - name: Run staging SLO smoke
+        working-directory: backend
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/exsoftoptic-api.log 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid"' EXIT
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:8000/health >/dev/null && break
+            sleep 1
+          done
+          python scripts/load_smoke.py --slo-file ../ops/performance/staging-slo.json --output-json ./artifacts/load-smoke.json
+
+      - name: Upload load smoke result
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-load-smoke
+          path: backend/artifacts/load-smoke.json
+          if-no-files-found: error
+          retention-days: 14

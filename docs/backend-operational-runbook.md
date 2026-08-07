@@ -163,7 +163,7 @@ After starting the API locally or in staging, run a lightweight load smoke test:
 
 ```bash
 make load-smoke
-python scripts/load_smoke.py --url https://staging.example.com/health --requests 100 --concurrency 10 --max-p95-ms 750
+python scripts/load_smoke.py --slo-file ../ops/performance/staging-slo.json --output-json ./artifacts/load-smoke.json
 ```
 
 Use this as a fast regression check, not as a full capacity test. Track:
@@ -173,6 +173,14 @@ Use this as a fast regression check, not as a full capacity test. Track:
 - p95 latency;
 - 5xx responses during deployment windows;
 - differences between `/health`, `/ready` and representative authenticated endpoints.
+
+Override a plan from the CLI for an authenticated business endpoint without storing credentials:
+
+```bash
+python scripts/load_smoke.py --slo-file ../ops/performance/staging-slo.json \
+  --url https://staging.example.com/api/v1/productos/ \
+  --header "Authorization: Bearer $ACCESS_TOKEN" --requests 500 --concurrency 20
+```
 
 ## 11. RBAC permission governance
 

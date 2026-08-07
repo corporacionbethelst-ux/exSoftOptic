@@ -40,7 +40,7 @@ e2e:  ## Ejecutar smoke tests end-to-end de API y base de datos
 	python -m pytest tests/test_e2e_smoke.py -q
 
 load-smoke:  ## Ejecutar prueba ligera de carga contra /health local
-	python scripts/load_smoke.py --url http://localhost:8000/health
+	python scripts/load_smoke.py --slo-file ../ops/performance/staging-slo.json
 
 migration-audit:  ## Auditar estáticamente grafo y seguridad de migraciones Alembic
 	python scripts/audit_migrations_static.py
