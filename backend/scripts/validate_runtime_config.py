@@ -140,6 +140,8 @@ class RuntimeConfigValidator:
         api_key = os.getenv(f"{prefix}_API_KEY", "")
         timeout = os.getenv(f"{prefix}_TIMEOUT_SECONDS", "")
         retry_attempts = os.getenv(f"{prefix}_RETRY_ATTEMPTS", "")
+        circuit_threshold = os.getenv(f"{prefix}_CIRCUIT_FAILURE_THRESHOLD", "")
+        circuit_recovery = os.getenv(f"{prefix}_CIRCUIT_RECOVERY_SECONDS", "")
         if provider in {"HTTP", "API"}:
             if not api_url:
                 self._error(f"{prefix}_API_URL es obligatorio cuando {prefix}_PROVIDER={provider}")
@@ -164,6 +166,18 @@ class RuntimeConfigValidator:
                     self._error(f"{prefix}_RETRY_ATTEMPTS debe ser mayor que cero")
             except ValueError:
                 self._error(f"{prefix}_RETRY_ATTEMPTS debe ser numérico")
+        if circuit_threshold:
+            try:
+                if int(circuit_threshold) < 1:
+                    self._error(f"{prefix}_CIRCUIT_FAILURE_THRESHOLD debe ser mayor que cero")
+            except ValueError:
+                self._error(f"{prefix}_CIRCUIT_FAILURE_THRESHOLD debe ser numérico")
+        if circuit_recovery:
+            try:
+                if float(circuit_recovery) < 0:
+                    self._error(f"{prefix}_CIRCUIT_RECOVERY_SECONDS no puede ser negativo")
+            except ValueError:
+                self._error(f"{prefix}_CIRCUIT_RECOVERY_SECONDS debe ser numérico")
         if api_url:
             parsed = urlparse(api_url)
             if self._is_production() and parsed.scheme != "https":

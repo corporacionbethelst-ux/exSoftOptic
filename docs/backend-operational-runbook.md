@@ -129,6 +129,8 @@ GET /api/v1/observabilidad/metrics/prometheus
 
 Tune these settings per environment: `MAX_FAILED_LOGIN_ATTEMPTS`, `ACCOUNT_LOCK_MINUTES`, `CFDI_RETRY_ATTEMPTS` and `BANKING_RETRY_ATTEMPTS`.
 
+External HTTP adapters retry only transient failures (connection/timeouts, 408, 425, 429 and selected 5xx responses). Permanent client errors fail immediately. Independent CFDI and banking circuit breakers open after consecutive transient failures, reject calls during the recovery window and allow a single half-open probe afterward. Configure them with `*_CIRCUIT_FAILURE_THRESHOLD` and `*_CIRCUIT_RECOVERY_SECONDS`.
+
 ## 13. Container deployment hardening
 
 The backend image is built from `backend/Dockerfile` with:

@@ -14,7 +14,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 6 | Infraestructura productiva | En curso | Definir plataforma destino, TLS, DNS y proxy perimetral |
 | 7 | Observabilidad | En curso | Instalar Prometheus/log aggregation y validar alertas |
 | 8 | Rendimiento y capacidad | En curso | Ejecutar baseline y prueba sostenida con datos representativos |
-| 9 | Resiliencia e integraciones | Parcial | Fallos inyectados, reintentos y circuit breakers validados |
+| 9 | Resiliencia e integraciones | En curso | Validar fallos inyectados contra sandbox de proveedores |
 | 10 | Calidad funcional E2E | Pendiente | Automatizar recorridos críticos del navegador |
 | 11 | Cumplimiento y privacidad | Pendiente | Políticas de retención, consentimiento y derechos ARCO |
 | 12 | Operación y soporte | Parcial | Guardias, escalamiento e incident response probado |
@@ -113,6 +113,18 @@ make readiness
 - [ ] Ejecutar baseline sobre endpoints de negocio y dataset con volumen representativo.
 - [ ] Ejecutar soak test de 2–8 horas y verificar memoria, conexiones y crecimiento de colas.
 - [ ] Aprobar capacidad máxima, margen de seguridad y estrategia de escalamiento.
+
+## Avance de la fase 9
+
+- [x] Los reintentos usan backoff exponencial con jitter y límites configurables.
+- [x] Errores permanentes 4xx no se reintentan ni degradan el circuit breaker.
+- [x] Timeouts, fallos de conexión, 408, 429 y 5xx transitorios sí se reintentan.
+- [x] CFDI y banca tienen circuit breakers independientes con estado half-open.
+- [x] El circuito abierto falla rápido y evita saturar proveedores degradados.
+- [x] Existen pruebas de apertura, recuperación, errores no contabilizados y clasificación HTTP.
+- [ ] Ejecutar fault injection contra sandboxes reales de CFDI y banca.
+- [ ] Definir reconciliación manual y automática para operaciones con resultado incierto.
+- [ ] Crear dashboards y alertas específicas de circuit breaker y reintentos.
 
 ## Regla de avance
 

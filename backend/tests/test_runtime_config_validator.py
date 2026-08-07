@@ -69,6 +69,17 @@ def test_rejects_missing_metrics_scrape_token() -> None:
     )
 
 
+def test_rejects_invalid_circuit_breaker_settings() -> None:
+    messages = validate(
+        {
+            "CFDI_CIRCUIT_FAILURE_THRESHOLD": "0",
+            "BANKING_CIRCUIT_RECOVERY_SECONDS": "-1",
+        }
+    )
+    assert "CFDI_CIRCUIT_FAILURE_THRESHOLD debe ser mayor que cero" in messages
+    assert "BANKING_CIRCUIT_RECOVERY_SECONDS no puede ser negativo" in messages
+
+
 def run_validator(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     merged_env = os.environ.copy()
     merged_env.update(env)

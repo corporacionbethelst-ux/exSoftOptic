@@ -79,3 +79,27 @@ def test_banking_providers_validate_required_inputs():
         HttpBankStatementProvider("", "bank-token")
     with pytest.raises(BankingProviderError):
         HttpBankStatementProvider("https://bank.example", "")
+
+
+@pytest.mark.asyncio
+async def test_http_bank_provider_retries_transient_server_error(monkeypatch):
+    calls = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(503, text="temporarily unavailable", request=request)
+        return httpx.Response(200, json={"movements": []}, request=request)
+
+    monkeypatch.setattr("app.services.banking_provider.settings.BANKING_RETRY_ATTEMPTS", 2)
+    provider = HttpBankStatementProvider(
+        "https://bank.example",
+        "bank-token",
+        transport=httpx.MockTransport(handler),
+    )
+    movements = await provider.fetch_statement(
+        "123", date_from=date(2026, 6, 1), date_to=date(2026, 6, 30)
+    )
+    assert movements == []
+    assert calls == 2

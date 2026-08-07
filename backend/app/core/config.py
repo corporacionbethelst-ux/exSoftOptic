@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     CFDI_API_KEY: str = ""
     CFDI_TIMEOUT_SECONDS: float = 10.0
     CFDI_RETRY_ATTEMPTS: int = 3
+    CFDI_CIRCUIT_FAILURE_THRESHOLD: int = 5
+    CFDI_CIRCUIT_RECOVERY_SECONDS: float = 30.0
     CFDI_CERTIFICATE_PATH: str = ""
     CFDI_KEY_PATH: str = ""
     CFDI_PASSWORD_CERT: str = ""
@@ -57,6 +59,8 @@ class Settings(BaseSettings):
     BANKING_API_KEY: str = ""
     BANKING_TIMEOUT_SECONDS: float = 10.0
     BANKING_RETRY_ATTEMPTS: int = 3
+    BANKING_CIRCUIT_FAILURE_THRESHOLD: int = 5
+    BANKING_CIRCUIT_RECOVERY_SECONDS: float = 30.0
     
     # Storage
     UPLOAD_DIR: str = "./uploads"
