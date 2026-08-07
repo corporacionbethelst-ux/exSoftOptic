@@ -199,6 +199,14 @@ GET /api/v1/observabilidad/metrics
 GET /api/v1/observabilidad/metrics/prometheus
 ```
 
+Prometheus should scrape the dedicated internal endpoint with a separate bearer token:
+
+```bash
+curl -H "Authorization: Bearer $METRICS_TOKEN" http://backend:8000/metrics
+```
+
+Starter scrape configuration and alerts live in `ops/prometheus/`. Mount `METRICS_TOKEN` as a secret file for Prometheus; do not reuse a user JWT or expose `/metrics` through the public reverse proxy.
+
 Use the JSON endpoint for quick operator inspection and the Prometheus text endpoint for internal scrapers. Monitor at least:
 
 - `exsoftoptic_requests_total` for traffic volume.

@@ -66,8 +66,10 @@ services:
     environment: &backend-environment
       ENVIRONMENT: production
       DEBUG: "false"
+      LOG_FORMAT: json
       RUN_MIGRATIONS_ON_START: "false"
       SECRET_KEY: ${SECRET_KEY:?required}
+      METRICS_TOKEN: ${METRICS_TOKEN:?required}
       DATABASE_URL: postgresql+asyncpg://${OPTICA_POSTGRES_USER:?required}:${OPTICA_POSTGRES_PASSWORD:?required}@postgres:5432/${OPTICA_POSTGRES_DB:?required}
       REDIS_URL: redis://:${REDIS_PASSWORD:?required}@redis:6379/0
       MONGODB_URL: mongodb://${OPTICA_MONGO_USER:?required}:${OPTICA_MONGO_PASSWORD:?required}@mongodb:27017/${OPTICA_MONGO_DB:?required}?authSource=admin

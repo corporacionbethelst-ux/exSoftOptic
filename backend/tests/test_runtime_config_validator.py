@@ -14,6 +14,7 @@ SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "validate_runtime_con
 
 PRODUCTION_ENV = {
     "SECRET_KEY": "a" * 48,
+    "METRICS_TOKEN": "m" * 48,
     "DATABASE_URL": "postgresql+asyncpg://user:secure@postgres:5432/app",
     "MONGODB_URL": "mongodb://user:secure@mongodb:27017/app",
     "REDIS_URL": "redis://redis:6379/0",
@@ -60,6 +61,12 @@ def test_rejects_unsupported_jwt_algorithm() -> None:
 def test_rejects_placeholder_provider_credentials() -> None:
     messages = validate({"CFDI_API_KEY": "replace-with-secret-manager-reference"})
     assert "CFDI_API_KEY contiene un valor de ejemplo" in messages
+
+
+def test_rejects_missing_metrics_scrape_token() -> None:
+    assert "METRICS_TOKEN debe tener al menos 32 caracteres en producción" in validate(
+        {"METRICS_TOKEN": ""}
+    )
 
 
 def run_validator(env: dict[str, str]) -> subprocess.CompletedProcess[str]:

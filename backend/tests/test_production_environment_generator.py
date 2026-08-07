@@ -46,4 +46,6 @@ def test_render_creates_distinct_secrets_and_authenticated_service_urls() -> Non
     assert first["OPTICA_MONGO_PASSWORD"] != second["OPTICA_MONGO_PASSWORD"]
     assert first["REDIS_PASSWORD"] != second["REDIS_PASSWORD"]
     assert first["SECRET_KEY"] != second["SECRET_KEY"]
+    assert first["METRICS_TOKEN"] != second["METRICS_TOKEN"]
     assert len(first["SECRET_KEY"]) >= 64
+    assert len(first["METRICS_TOKEN"]) >= 32

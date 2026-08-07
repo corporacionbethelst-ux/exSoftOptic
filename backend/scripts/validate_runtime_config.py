@@ -82,6 +82,7 @@ class RuntimeConfigValidator:
         self._validate_required("REDIS_URL")
         self._validate_database_url()
         self._validate_secret_strength()
+        self._validate_metrics_token()
         self._validate_production_flags()
         self._validate_service_urls()
         self._validate_provider("CFDI", default_allowed={"development", "test", "local"})
@@ -114,6 +115,13 @@ class RuntimeConfigValidator:
         algorithm = os.getenv("ALGORITHM", "HS256").upper()
         if algorithm not in {"HS256", "HS384", "HS512"}:
             self._error("ALGORITHM debe ser HS256, HS384 o HS512")
+
+    def _validate_metrics_token(self) -> None:
+        token = os.getenv("METRICS_TOKEN", "")
+        if self._is_production() and len(token) < 32:
+            self._error("METRICS_TOKEN debe tener al menos 32 caracteres en producción")
+        if token and any(marker in token.lower() for marker in PLACEHOLDER_MARKERS):
+            self._error("METRICS_TOKEN contiene un valor de ejemplo")
 
     def _validate_service_urls(self) -> None:
         if not self._is_production():

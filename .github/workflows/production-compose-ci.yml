@@ -33,6 +33,7 @@ jobs:
       OPTICA_MONGO_DB: optica
       REDIS_PASSWORD: ci-redis-password
       SECRET_KEY: ci-secret-key-with-more-than-thirty-two-characters
+      METRICS_TOKEN: ci-metrics-token-with-more-than-thirty-two-characters
       CORS_ORIGINS: '["https://app.example.com"]'
       CFDI_PROVIDER: HTTP
       CFDI_API_URL: https://cfdi.example.com

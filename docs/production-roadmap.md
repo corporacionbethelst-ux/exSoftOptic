@@ -12,7 +12,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 4 | Seguridad de aplicación | Parcial | Revisar resultados CodeQL, ejecutar DAST y pentest |
 | 5 | Datos, migraciones y recuperación | En curso | Ensayo documentado de restauración en base desechable |
 | 6 | Infraestructura productiva | En curso | Definir plataforma destino, TLS, DNS y proxy perimetral |
-| 7 | Observabilidad | Parcial | Dashboards, alertas y trazas en plataforma destino |
+| 7 | Observabilidad | En curso | Instalar Prometheus/log aggregation y validar alertas |
 | 8 | Rendimiento y capacidad | Pendiente | Pruebas representativas y objetivos SLO |
 | 9 | Resiliencia e integraciones | Parcial | Fallos inyectados, reintentos y circuit breakers validados |
 | 10 | Calidad funcional E2E | Pendiente | Automatizar recorridos críticos del navegador |
@@ -89,6 +89,18 @@ make readiness
 - [ ] Instalar proxy/LB perimetral con TLS, certificados renovables y límite de solicitudes.
 - [ ] Definir DNS, firewall, segmentación por ambiente y almacenamiento administrado.
 - [ ] Definir estrategia de escalamiento, presupuesto y alta disponibilidad.
+
+## Avance de la fase 7
+
+- [x] Logs HTTP estructurados incluyen correlation ID, ruta normalizada, estado y duración.
+- [x] Los correlation IDs externos se validan para evitar inyección y valores sin límite.
+- [x] Métricas usan plantillas de ruta para evitar cardinalidad por UUID/ID.
+- [x] Prometheus expone requests, errores, in-flight e histograma de latencia.
+- [x] El scrape `/metrics` usa un token dedicado, distinto del JWT de usuarios.
+- [x] Existe un conjunto inicial de alertas para disponibilidad, 5xx, latencia, excepciones y reinicios.
+- [ ] Desplegar Prometheus/Grafana y agregación central de logs en la plataforma elegida.
+- [ ] Conectar Alertmanager con guardias y probar cada alerta mediante simulacro.
+- [ ] Incorporar trazas distribuidas OpenTelemetry en API, workers y proveedores externos.
 
 ## Regla de avance
 
