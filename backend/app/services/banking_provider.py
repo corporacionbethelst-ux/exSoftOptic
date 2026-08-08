@@ -8,6 +8,8 @@ import httpx
 
 from app.core.config import settings
 from app.core.retry import RetryPolicy, retry_async
+from app.core.circuit_breaker import CircuitBreaker, CircuitOpenError
+from app.core.http_resilience import is_transient_http_error
 
 
 @dataclass(frozen=True)
@@ -78,6 +80,7 @@ class HttpBankStatementProvider(BankStatementProvider):
         api_key: str,
         timeout_seconds: float = 10.0,
         transport: httpx.AsyncBaseTransport | None = None,
+        circuit_breaker: CircuitBreaker | None = None,
     ) -> None:
         if not base_url:
             raise BankingProviderError("BANKING_API_URL es obligatorio para el proveedor HTTP")
@@ -87,6 +90,7 @@ class HttpBankStatementProvider(BankStatementProvider):
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
         self.transport = transport
+        self.circuit_breaker = circuit_breaker or _new_banking_circuit_breaker()
 
     async def fetch_statement(self, account_number: str, *, date_from: date, date_to: date) -> list[BankStatementMovement]:
         try:
@@ -104,12 +108,15 @@ class HttpBankStatementProvider(BankStatementProvider):
                     response.raise_for_status()
                     return response
 
-                response = await retry_async(
-                    send_request,
-                    RetryPolicy(
-                        attempts=settings.BANKING_RETRY_ATTEMPTS,
-                        retry_exceptions=(httpx.HTTPError,),
-                    ),
+                response = await self.circuit_breaker.call(
+                    lambda: retry_async(
+                        send_request,
+                        RetryPolicy(
+                            attempts=settings.BANKING_RETRY_ATTEMPTS,
+                            retry_exceptions=(httpx.HTTPError,),
+                            should_retry=is_transient_http_error,
+                        ),
+                    )
                 )
                 payload = response.json()
         except httpx.HTTPStatusError as exc:
@@ -118,6 +125,8 @@ class HttpBankStatementProvider(BankStatementProvider):
             ) from exc
         except httpx.HTTPError as exc:
             raise BankingProviderError(f"Error al comunicarse con proveedor bancario: {exc}") from exc
+        except CircuitOpenError as exc:
+            raise BankingProviderError("Proveedor bancario temporalmente no disponible") from exc
         return self._movements_from_response(payload)
 
     def _headers(self) -> dict[str, str]:
@@ -146,6 +155,17 @@ class HttpBankStatementProvider(BankStatementProvider):
         return movements
 
 
+def _new_banking_circuit_breaker() -> CircuitBreaker:
+    return CircuitBreaker(
+        failure_threshold=settings.BANKING_CIRCUIT_FAILURE_THRESHOLD,
+        recovery_timeout_seconds=settings.BANKING_CIRCUIT_RECOVERY_SECONDS,
+        should_count_failure=is_transient_http_error,
+    )
+
+
+_shared_banking_circuit_breaker = _new_banking_circuit_breaker()
+
+
 def get_bank_statement_provider(name: str, *, csv_content: str | None = None) -> BankStatementProvider:
     provider_name = (name or settings.BANKING_PROVIDER).upper()
     if provider_name == "CSV":
@@ -157,5 +177,6 @@ def get_bank_statement_provider(name: str, *, csv_content: str | None = None) ->
             settings.BANKING_API_URL,
             settings.BANKING_API_KEY,
             settings.BANKING_TIMEOUT_SECONDS,
+            circuit_breaker=_shared_banking_circuit_breaker,
         )
     raise ValueError(f"Proveedor bancario no soportado: {name}")

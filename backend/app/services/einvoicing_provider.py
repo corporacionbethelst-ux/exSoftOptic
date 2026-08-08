@@ -6,6 +6,8 @@ import httpx
 
 from app.core.config import settings
 from app.core.retry import RetryPolicy, retry_async
+from app.core.circuit_breaker import CircuitBreaker, CircuitOpenError
+from app.core.http_resilience import is_transient_http_error
 
 
 @dataclass(frozen=True)
@@ -77,6 +79,7 @@ class HttpEInvoicingProvider(EInvoicingProvider):
         api_key: str,
         timeout_seconds: float = 10.0,
         transport: httpx.AsyncBaseTransport | None = None,
+        circuit_breaker: CircuitBreaker | None = None,
     ) -> None:
         if not base_url:
             raise EInvoicingProviderError("CFDI_API_URL es obligatorio para el proveedor HTTP")
@@ -86,6 +89,7 @@ class HttpEInvoicingProvider(EInvoicingProvider):
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
         self.transport = transport
+        self.circuit_breaker = circuit_breaker or _new_cfdi_circuit_breaker()
 
     async def issue_invoice(self, payload: EInvoicePayload) -> EInvoiceResult:
         response = await self._post("/invoices", self._payload_to_json(payload))
@@ -109,12 +113,15 @@ class HttpEInvoicingProvider(EInvoicingProvider):
                     response.raise_for_status()
                     return response
 
-                response = await retry_async(
-                    send_request,
-                    RetryPolicy(
-                        attempts=settings.CFDI_RETRY_ATTEMPTS,
-                        retry_exceptions=(httpx.HTTPError,),
-                    ),
+                response = await self.circuit_breaker.call(
+                    lambda: retry_async(
+                        send_request,
+                        RetryPolicy(
+                            attempts=settings.CFDI_RETRY_ATTEMPTS,
+                            retry_exceptions=(httpx.HTTPError,),
+                            should_retry=is_transient_http_error,
+                        ),
+                    )
                 )
                 if not response.content:
                     return {}
@@ -125,6 +132,8 @@ class HttpEInvoicingProvider(EInvoicingProvider):
             ) from exc
         except httpx.HTTPError as exc:
             raise EInvoicingProviderError(f"Error al comunicarse con proveedor CFDI: {exc}") from exc
+        except CircuitOpenError as exc:
+            raise EInvoicingProviderError("Proveedor CFDI temporalmente no disponible") from exc
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -166,6 +175,17 @@ class HttpEInvoicingProvider(EInvoicingProvider):
         return EInvoiceResult(uuid_fiscal=uuid_fiscal, xml_url=xml_url, pdf_url=pdf_url)
 
 
+def _new_cfdi_circuit_breaker() -> CircuitBreaker:
+    return CircuitBreaker(
+        failure_threshold=settings.CFDI_CIRCUIT_FAILURE_THRESHOLD,
+        recovery_timeout_seconds=settings.CFDI_CIRCUIT_RECOVERY_SECONDS,
+        should_count_failure=is_transient_http_error,
+    )
+
+
+_shared_cfdi_circuit_breaker = _new_cfdi_circuit_breaker()
+
+
 def get_einvoicing_provider(name: str) -> EInvoicingProvider:
     provider_name = (name or settings.CFDI_PROVIDER).upper()
     if provider_name == "MOCK":
@@ -175,5 +195,6 @@ def get_einvoicing_provider(name: str) -> EInvoicingProvider:
             settings.CFDI_API_URL,
             settings.CFDI_API_KEY,
             settings.CFDI_TIMEOUT_SECONDS,
+            circuit_breaker=_shared_cfdi_circuit_breaker,
         )
     raise ValueError(f"Proveedor de facturación no soportado: {name}")

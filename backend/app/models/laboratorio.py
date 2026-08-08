@@ -24,6 +24,11 @@ class OrdenLaboratorio(BaseModel):
     fecha_entrega = Column(DateTime(timezone=True), nullable=True)
     observaciones = Column(Text, nullable=True)
 
+    empresa = relationship("Empresa")
+    sucursal = relationship("Sucursal")
+    venta = relationship("Venta")
+    paciente = relationship("Paciente")
+    receta = relationship("RecetaOptica")
     etapas = relationship("OrdenLaboratorioEtapa", back_populates="orden", cascade="all, delete-orphan")
     consumos = relationship("ConsumoMaterialLaboratorio", back_populates="orden", cascade="all, delete-orphan")
     controles_calidad = relationship("ControlCalidadLaboratorio", back_populates="orden", cascade="all, delete-orphan")

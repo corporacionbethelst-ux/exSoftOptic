@@ -1,0 +1,42 @@
+.PHONY: help readiness readiness-fast frontend-check browser-e2e diagnostics staging-release-plan rollout-evaluate stabilization-evaluate compose-check compose-production-check env-production-init config-production-audit
+
+help: ## Mostrar comandos de verificacion del proyecto
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'
+
+readiness-fast: ## Ejecutar verificaciones estaticas de backend y frontend
+	bash scripts/production_readiness.sh --fast
+
+readiness: ## Ejecutar la puerta completa previa a staging/produccion
+	bash scripts/production_readiness.sh --full
+
+frontend-check: ## Ejecutar lint, tipos y build del frontend
+	npm --prefix frontend run lint
+	npm --prefix frontend run typecheck
+	npm --prefix frontend run build
+
+browser-e2e: ## Ejecutar smoke de navegador contra frontend/dist servido en :4173
+	@bash -c 'python3 -m http.server 4173 --bind 127.0.0.1 --directory frontend/dist >/tmp/exsoftoptic-frontend.log 2>&1 & pid=$$!; trap "kill $$pid" EXIT; sleep 1; python3 e2e/browser_smoke.py'
+
+diagnostics: ## Recolectar diagnóstico seguro en artifacts/diagnostics.json
+	python3 scripts/collect_incident_diagnostics.py
+
+staging-release-plan: ## Generar el plan revisable del ensayo de release en staging
+	python3 scripts/staging_release_rehearsal.py
+
+rollout-evaluate: ## Evaluar métricas canary: make rollout-evaluate metrics=x.json sha=abc1234 stage=5 approver=x ticket=CHG-1
+	python3 scripts/evaluate_production_rollout.py --metrics "$(metrics)" --release-sha "$(sha)" --current-stage "$(stage)" --approved-by "$(approver)" --change-ticket "$(ticket)"
+
+stabilization-evaluate: ## Evaluar estabilización: make stabilization-evaluate evidence=x.json sha=abc1234 owner=x ticket=PIR-1
+	python3 scripts/evaluate_stabilization.py --evidence "$(evidence)" --release-sha "$(sha)" --owner "$(owner)" --review-ticket "$(ticket)"
+
+compose-check: ## Validar la configuracion Docker Compose renderizada
+	docker compose config --quiet
+
+compose-production-check: ## Validar Docker Compose productivo con .env
+	docker compose --env-file .env -f docker-compose.production.yml config --quiet
+
+env-production-init: ## Generar .env productivo: make env-production-init domain=app.example.com
+	python3 scripts/init_production_environment.py --domain "$(domain)"
+
+config-production-audit: ## Validar .env con reglas estrictas de produccion
+	python3 backend/scripts/validate_runtime_config.py --env-file .env --environment production --strict

@@ -1,0 +1,22 @@
+{
+  "strategy": "canary",
+  "stages_percent": [5, 25, 50, 100],
+  "minimum_observation_minutes": [15, 30, 60, 120],
+  "thresholds": {
+    "maximum_error_rate": 0.01,
+    "maximum_p95_ms": 750.0,
+    "maximum_p99_ms": 1500.0,
+    "minimum_health_success_rate": 0.999
+  },
+  "automatic_rollback_on": [
+    "health_check_failure",
+    "error_rate_threshold_breach",
+    "p95_threshold_breach",
+    "p99_threshold_breach"
+  ],
+  "manual_gates": [
+    "release-manager",
+    "operations-on-call",
+    "business-owner"
+  ]
+}
