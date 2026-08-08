@@ -19,7 +19,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 11 | Cumplimiento y privacidad | En curso | Aprobación legal de retención, consentimiento y derechos ARCO |
 | 12 | Operación y soporte | En curso | Aprobar guardias, escalamiento y ejecutar simulacro SEV-1 |
 | 13 | Staging y ensayo de release | En curso | Ejecutar el ensayo y obtener UAT aprobada |
-| 14 | Lanzamiento controlado | Pendiente | Plan canary/blue-green, rollback y ventana aprobados |
+| 14 | Lanzamiento controlado | En curso | Ejecutar canary real y aprobar la ventana de cambio |
 | 15 | Estabilización y mejora continua | Pendiente | Métricas post-lanzamiento y revisión de incidentes |
 
 ## Puerta automatizada actual
@@ -172,6 +172,18 @@ make readiness
 - [ ] Ejecutar el ensayo completo con infraestructura y proveedores sandbox reales.
 - [ ] Conservar evidencia de migración, SLO, E2E y restauración de la versión anterior.
 - [ ] Obtener aprobación UAT de responsables funcionales y operativos.
+
+## Avance de la fase 14
+
+- [x] Existe una política canary versionada con etapas 5%, 25%, 50% y 100%.
+- [x] Cada etapa tiene una ventana mínima y umbrales de error, salud, p95 y p99.
+- [x] El evaluador emite decisiones auditables `advance`, `hold`, `rollback` o `complete`.
+- [x] Una violación crítica devuelve código no cero para detener automatizaciones.
+- [x] Cada decisión identifica SHA, aprobador, ticket de cambio, métricas y siguiente etapa.
+- [x] Existe runbook de lanzamiento, aborto y rollback sin downgrade automático de datos.
+- [ ] Configurar tráfico canary/blue-green en el balanceador de la plataforma elegida.
+- [ ] Aprobar ventana, responsables, comunicación y versión estable de rollback.
+- [ ] Ejecutar el lanzamiento controlado y conservar evidencia de cada etapa.
 
 ## Regla de avance
 
