@@ -1,7 +1,7 @@
-from typing import Optional, List
+from typing import Any, Optional, List
 from uuid import UUID
 from datetime import datetime, timedelta
-from sqlalchemy import select, and_
+from sqlalchemy import func, or_, select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.base import CRUDBase
@@ -154,7 +154,8 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
         *,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[dict] = None
+        filters: Optional[dict] = None,
+        search: Optional[str] = None
     ) -> List[Usuario]:
         """Obtener usuarios con roles cargados"""
         from sqlalchemy.orm import selectinload
@@ -164,17 +165,45 @@ class CRUDUsuario(CRUDBase[Usuario, UsuarioCreate, UsuarioUpdate]):
             .where(Usuario.deleted_at.is_(None))
         )
         
-        if filters:
-            for field, value in filters.items():
-                if hasattr(Usuario, field) and value is not None:
-                    query = query.where(getattr(Usuario, field) == value)
+        query = self._apply_user_filters(query, filters=filters, search=search)
         
         query = query.offset(skip).limit(limit).order_by(Usuario.created_at.desc())
         
         result = await db.execute(query)
         return result.scalars().all()
 
-class CRUDRol(CRUDBase[Rol, any, any]):
+    async def count_with_filters(
+        self,
+        db: AsyncSession,
+        *,
+        filters: Optional[dict] = None,
+        search: Optional[str] = None,
+    ) -> int:
+        """Contar usuarios aplicando los mismos filtros del listado."""
+        query = select(func.count()).select_from(Usuario).where(Usuario.deleted_at.is_(None))
+        query = self._apply_user_filters(query, filters=filters, search=search)
+        result = await db.execute(query)
+        return result.scalar() or 0
+
+    def _apply_user_filters(self, query, *, filters: Optional[dict] = None, search: Optional[str] = None):
+        if filters:
+            for field, value in filters.items():
+                if hasattr(Usuario, field) and value is not None:
+                    query = query.where(getattr(Usuario, field) == value)
+
+        if search:
+            pattern = f"%{search}%"
+            query = query.where(
+                or_(
+                    Usuario.username.ilike(pattern),
+                    Usuario.email.ilike(pattern),
+                    Usuario.nombre_completo.ilike(pattern),
+                )
+            )
+
+        return query
+
+class CRUDRol(CRUDBase[Rol, Any, Any]):
     """CRUD para roles"""
     
     async def get_by_nombre(self, db: AsyncSession, nombre: str) -> Optional[Rol]:
