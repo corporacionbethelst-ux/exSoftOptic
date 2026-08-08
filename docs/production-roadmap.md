@@ -15,7 +15,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 7 | Observabilidad | En curso | Instalar Prometheus/log aggregation y validar alertas |
 | 8 | Rendimiento y capacidad | En curso | Ejecutar baseline y prueba sostenida con datos representativos |
 | 9 | Resiliencia e integraciones | En curso | Validar fallos inyectados contra sandbox de proveedores |
-| 10 | Calidad funcional E2E | Pendiente | Automatizar recorridos críticos del navegador |
+| 10 | Calidad funcional E2E | En curso | Ampliar cobertura a flujos transaccionales con backend real |
 | 11 | Cumplimiento y privacidad | Pendiente | Políticas de retención, consentimiento y derechos ARCO |
 | 12 | Operación y soporte | Parcial | Guardias, escalamiento e incident response probado |
 | 13 | Staging y ensayo de release | Pendiente | Despliegue idéntico a producción y UAT aprobada |
@@ -125,6 +125,17 @@ make readiness
 - [ ] Ejecutar fault injection contra sandboxes reales de CFDI y banca.
 - [ ] Definir reconciliación manual y automática para operaciones con resultado incierto.
 - [ ] Crear dashboards y alertas específicas de circuit breaker y reintentos.
+
+## Avance de la fase 10
+
+- [x] Existe smoke Chromium reproducible para login inválido, login correcto, navegación y logout.
+- [x] El navegador valida rotación automática cuando expira el access token.
+- [x] Las APIs se interceptan con contratos deterministas para evitar pruebas inestables.
+- [x] CI construye el frontend, instala Chromium y ejecuta el smoke en cada cambio relevante.
+- [x] Fallos conservan screenshot y trace Playwright durante 14 días.
+- [ ] Ejecutar los mismos recorridos contra backend y base de datos reales en staging.
+- [ ] Cubrir ventas, compras, inventario, laboratorio y facturación con datos aislados.
+- [ ] Añadir matriz Chromium/Firefox/WebKit y viewport móvil para release candidates.
 
 ## Regla de avance
 

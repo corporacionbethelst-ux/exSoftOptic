@@ -184,6 +184,19 @@ python scripts/load_smoke.py --slo-file ../ops/performance/staging-slo.json \
   --header "Authorization: Bearer $ACCESS_TOKEN" --requests 500 --concurrency 20
 ```
 
+## Browser end-to-end smoke
+
+The deterministic Chromium smoke validates rejected credentials, successful login, dashboard loading, user navigation, logout and transparent access-token rotation:
+
+```bash
+python -m pip install -r e2e/requirements.txt
+python -m playwright install chromium
+npm ci --prefix frontend && npm --prefix frontend run build
+make browser-e2e
+```
+
+The browser test mocks only the API boundary; production assets and authentication/session code execute in a real browser. CI preserves Playwright trace and failure screenshots under the `browser-e2e-artifacts` artifact.
+
 ## 11. RBAC permission governance
 
 The backend permission catalog is generated from endpoint `require_permissions([...])` declarations:
