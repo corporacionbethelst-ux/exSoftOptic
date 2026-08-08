@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,11 @@ from app.services.invoice_service import InvoiceService
 from app.services.secured_audit import audit_user_action
 
 router = APIRouter()
+
+
+@router.get("/", response_model=list[FacturaResponse], dependencies=[Depends(require_permissions(["facturacion.leer"]))])
+async def listar_facturas(skip: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db), current_user: Usuario = Depends(get_current_active_user)):
+    return await InvoiceService(db).listar_facturas(empresa_id=current_user.empresa_id, skip=skip, limit=limit)
 
 
 @router.post("/emitir", response_model=FacturaResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions(["facturacion.emitir"]))])
