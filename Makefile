@@ -1,4 +1,4 @@
-.PHONY: help readiness readiness-fast frontend-check browser-e2e compose-check compose-production-check env-production-init config-production-audit
+.PHONY: help readiness readiness-fast frontend-check browser-e2e diagnostics staging-release-plan compose-check compose-production-check env-production-init config-production-audit
 
 help: ## Mostrar comandos de verificacion del proyecto
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'
@@ -16,6 +16,12 @@ frontend-check: ## Ejecutar lint, tipos y build del frontend
 
 browser-e2e: ## Ejecutar smoke de navegador contra frontend/dist servido en :4173
 	@bash -c 'python3 -m http.server 4173 --bind 127.0.0.1 --directory frontend/dist >/tmp/exsoftoptic-frontend.log 2>&1 & pid=$$!; trap "kill $$pid" EXIT; sleep 1; python3 e2e/browser_smoke.py'
+
+diagnostics: ## Recolectar diagnóstico seguro en artifacts/diagnostics.json
+	python3 scripts/collect_incident_diagnostics.py
+
+staging-release-plan: ## Generar el plan revisable del ensayo de release en staging
+	python3 scripts/staging_release_rehearsal.py
 
 compose-check: ## Validar la configuracion Docker Compose renderizada
 	docker compose config --quiet

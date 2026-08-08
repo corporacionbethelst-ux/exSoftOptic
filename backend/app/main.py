@@ -86,7 +86,9 @@ async def health_check():
         "status": "healthy",
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
+        "release_sha": settings.RELEASE_SHA,
+        "deployed_at": settings.DEPLOYED_AT,
     }
 
 @app.get("/ready", tags=["Health"])

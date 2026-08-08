@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     # Aplicación
     APP_NAME: str = "Sistema Óptica"
     APP_VERSION: str = "1.0.0"
+    RELEASE_SHA: str = "unknown"
+    DEPLOYED_AT: str = "unknown"
     DEBUG: bool = True
     ENVIRONMENT: str = "development"
     

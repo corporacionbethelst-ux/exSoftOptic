@@ -67,6 +67,8 @@ services:
       ENVIRONMENT: production
       DEBUG: "false"
       LOG_FORMAT: json
+      RELEASE_SHA: ${RELEASE_SHA:?required}
+      DEPLOYED_AT: ${DEPLOYED_AT:?required}
       RUN_MIGRATIONS_ON_START: "false"
       SECRET_KEY: ${SECRET_KEY:?required}
       METRICS_TOKEN: ${METRICS_TOKEN:?required}

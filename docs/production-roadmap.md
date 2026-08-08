@@ -17,8 +17,8 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 9 | Resiliencia e integraciones | En curso | Validar fallos inyectados contra sandbox de proveedores |
 | 10 | Calidad funcional E2E | En curso | Ampliar cobertura a flujos transaccionales con backend real |
 | 11 | Cumplimiento y privacidad | En curso | Aprobación legal de retención, consentimiento y derechos ARCO |
-| 12 | Operación y soporte | Parcial | Guardias, escalamiento e incident response probado |
-| 13 | Staging y ensayo de release | Pendiente | Despliegue idéntico a producción y UAT aprobada |
+| 12 | Operación y soporte | En curso | Aprobar guardias, escalamiento y ejecutar simulacro SEV-1 |
+| 13 | Staging y ensayo de release | En curso | Ejecutar el ensayo y obtener UAT aprobada |
 | 14 | Lanzamiento controlado | Pendiente | Plan canary/blue-green, rollback y ventana aprobados |
 | 15 | Estabilización y mejora continua | Pendiente | Métricas post-lanzamiento y revisión de incidentes |
 
@@ -148,6 +148,30 @@ make readiness
 - [ ] Obtener aprobación jurídica por país para privacidad, expediente clínico y fiscalidad.
 - [ ] Registrar consentimiento, finalidad, versión del aviso y revocación en el modelo de datos.
 - [ ] Automatizar retención únicamente después de aprobar legal holds y períodos definitivos.
+
+## Avance de la fase 12
+
+- [x] Existe clasificación SEV-1 a SEV-4 con objetivos iniciales de respuesta y comunicación.
+- [x] Existe checklist de primeros 15 minutos, mitigación, comunicación y postmortem.
+- [x] `/health` identifica release SHA y fecha de despliegue para correlacionar incidentes.
+- [x] Producción exige metadata de release válida en la auditoría de configuración.
+- [x] Existe colector diagnóstico que excluye deliberadamente variables de entorno y logs.
+- [x] El diagnóstico incluye salud, readiness, Git, capacidad del host y estado Compose.
+- [ ] Aprobar SLA/OLA, calendario de guardias y contactos de escalamiento.
+- [ ] Ejecutar game day SEV-1 y documentar tiempos reales, decisiones y mejoras.
+- [ ] Integrar paging, status page y sistema formal de gestión de incidentes.
+
+## Avance de la fase 13
+
+- [x] Existe un plan de release versionado con evidencia técnica obligatoria.
+- [x] El ensayo reutiliza el Compose productivo y separa el proyecto de staging.
+- [x] La secuencia audita configuración y ejecuta migraciones antes del despliegue.
+- [x] El proceso espera health/readiness y ejecuta smoke API y navegador.
+- [x] Se rechazan tags de imagen mutables durante la ejecución del ensayo.
+- [x] Existe runbook de UAT, criterios `GO`/`NO-GO` y rollback sin downgrade automático.
+- [ ] Ejecutar el ensayo completo con infraestructura y proveedores sandbox reales.
+- [ ] Conservar evidencia de migración, SLO, E2E y restauración de la versión anterior.
+- [ ] Obtener aprobación UAT de responsables funcionales y operativos.
 
 ## Regla de avance
 

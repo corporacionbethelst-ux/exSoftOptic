@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -83,6 +84,7 @@ class RuntimeConfigValidator:
         self._validate_database_url()
         self._validate_secret_strength()
         self._validate_metrics_token()
+        self._validate_release_metadata()
         self._validate_production_flags()
         self._validate_service_urls()
         self._validate_provider("CFDI", default_allowed={"development", "test", "local"})
@@ -122,6 +124,16 @@ class RuntimeConfigValidator:
             self._error("METRICS_TOKEN debe tener al menos 32 caracteres en producción")
         if token and any(marker in token.lower() for marker in PLACEHOLDER_MARKERS):
             self._error("METRICS_TOKEN contiene un valor de ejemplo")
+
+    def _validate_release_metadata(self) -> None:
+        if not self._is_production():
+            return
+        release_sha = os.getenv("RELEASE_SHA", "")
+        deployed_at = os.getenv("DEPLOYED_AT", "")
+        if not re.fullmatch(r"[0-9a-fA-F]{7,64}", release_sha):
+            self._error("RELEASE_SHA debe contener el hash hexadecimal del release")
+        if not deployed_at or deployed_at in {"unknown", "replace-at-deploy"}:
+            self._error("DEPLOYED_AT debe identificar la fecha del despliegue")
 
     def _validate_service_urls(self) -> None:
         if not self._is_production():

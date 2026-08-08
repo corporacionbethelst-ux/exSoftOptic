@@ -15,6 +15,8 @@ SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "validate_runtime_con
 PRODUCTION_ENV = {
     "SECRET_KEY": "a" * 48,
     "METRICS_TOKEN": "m" * 48,
+    "RELEASE_SHA": "0123456789abcdef0123456789abcdef01234567",
+    "DEPLOYED_AT": "2026-08-08T00:00:00Z",
     "DATABASE_URL": "postgresql+asyncpg://user:secure@postgres:5432/app",
     "MONGODB_URL": "mongodb://user:secure@mongodb:27017/app",
     "REDIS_URL": "redis://redis:6379/0",
@@ -78,6 +80,12 @@ def test_rejects_invalid_circuit_breaker_settings() -> None:
     )
     assert "CFDI_CIRCUIT_FAILURE_THRESHOLD debe ser mayor que cero" in messages
     assert "BANKING_CIRCUIT_RECOVERY_SECONDS no puede ser negativo" in messages
+
+
+def test_rejects_missing_release_metadata() -> None:
+    messages = validate({"RELEASE_SHA": "replace-at-deploy", "DEPLOYED_AT": "unknown"})
+    assert "RELEASE_SHA debe contener el hash hexadecimal del release" in messages
+    assert "DEPLOYED_AT debe identificar la fecha del despliegue" in messages
 
 
 def run_validator(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
