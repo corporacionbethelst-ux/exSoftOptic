@@ -42,6 +42,12 @@ Use it as the baseline for RBAC role templates and access reviews.
 - `crm.citas.crear`
 - `crm.citas.estado`
 - `crm.citas.leer`
+- `crm.clientes.crear`
+- `crm.clientes.leer`
+- `crm.pacientes.crear`
+- `crm.pacientes.leer`
+- `crm.recetas.crear`
+- `crm.recetas.leer`
 - `crm.recordatorios.crear`
 - `crm.recordatorios.leer`
 
@@ -97,12 +103,21 @@ Use it as the baseline for RBAC role templates and access reviews.
 ## presupuestos
 
 - `presupuestos.centros_costo.crear`
+- `presupuestos.centros_costo.leer`
 - `presupuestos.comprometer`
 - `presupuestos.crear`
+- `presupuestos.leer`
+
+## privacidad
+
+- `privacidad.solicitudes.anonimizar`
+- `privacidad.solicitudes.exportar`
 
 ## productos
 
 - `productos.crear`
+- `productos.editar`
+- `productos.eliminar`
 - `productos.leer`
 
 ## reportes
@@ -115,6 +130,7 @@ Use it as the baseline for RBAC role templates and access reviews.
 
 - `tesoreria.conciliar`
 - `tesoreria.cuentas.crear`
+- `tesoreria.cuentas.leer`
 - `tesoreria.movimientos.crear`
 - `tesoreria.movimientos.importar`
 - `tesoreria.movimientos.leer`

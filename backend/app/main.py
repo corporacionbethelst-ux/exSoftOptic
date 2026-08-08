@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, Header, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from contextlib import asynccontextmanager
@@ -14,12 +14,12 @@ from app.core.request_context import RequestContextMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.core.metrics import MetricsMiddleware
 from app.core.rate_limit import RateLimitMiddleware
+from app.core.logging_config import configure_logging
+from app.core.metrics import runtime_metrics
+from app.core.observability_auth import metrics_token_is_valid
 
-# Configurar logging
-logging.basicConfig(
-    level=getattr(logging, settings.LOG_LEVEL),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configurar logging estructurado antes de inicializar la aplicación.
+configure_logging(level=settings.LOG_LEVEL, log_format=settings.LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
@@ -86,7 +86,9 @@ async def health_check():
         "status": "healthy",
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
+        "release_sha": settings.RELEASE_SHA,
+        "deployed_at": settings.DEPLOYED_AT,
     }
 
 @app.get("/ready", tags=["Health"])
@@ -101,6 +103,17 @@ async def readiness_check():
             detail="Base de datos no disponible",
         ) from exc
     return {"status": "ready", "database": "reachable"}
+
+
+@app.get("/metrics", include_in_schema=False)
+async def prometheus_metrics(authorization: str | None = Header(default=None)):
+    """Prometheus scrape endpoint protected with a dedicated static bearer token."""
+    if not metrics_token_is_valid(authorization, settings.METRICS_TOKEN):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado")
+    return Response(
+        content=runtime_metrics.prometheus_text(),
+        media_type="text/plain; version=0.0.4",
+    )
 
 # Root
 @app.get("/", tags=["Root"])

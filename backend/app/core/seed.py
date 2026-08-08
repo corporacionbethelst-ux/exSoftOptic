@@ -1,6 +1,5 @@
 import asyncio
 import uuid
-from datetime import datetime
 from sqlalchemy import select
 
 from app.core.database import async_session_maker, engine, Base
@@ -9,49 +8,71 @@ from app.models.usuario import Usuario, Rol
 from app.models.empresa import Empresa
 from app.models.sucursal import Sucursal
 
+async def _upsert_by_scalar(db, model, lookup, values, label):
+    """Crear o actualizar una fila usando un criterio único."""
+    record = await db.scalar(select(model).where(*lookup))
+    action = "actualizado"
+
+    if record is None:
+        record = model(id=uuid.uuid4(), **values)
+        db.add(record)
+        action = "creado"
+    else:
+        for field, value in values.items():
+            setattr(record, field, value)
+
+    await db.flush()
+    print(f"  ✅ {label} {action}: {getattr(record, 'id', '')}")
+    return record
+
+
 async def create_initial_data():
-    """Crear datos iniciales del sistema"""
-    
+    """Crear o actualizar datos iniciales del sistema de forma idempotente."""
+
     # Crear tablas
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     async with async_session_maker() as db:
-        # 1. Crear empresa principal
-        print("🏢 Creando empresa principal...")
-        empresa = Empresa(
-            id=uuid.uuid4(),
-            razon_social="Óptica Demo S.A. de C.V.",
-            nombre_comercial="Óptica Demo",
-            rfc="ODE260618ABC",
-            regimen_fiscal="601",
-            codigo_postal="06600",
-            representante_legal="Admin Demo",
-            moneda_base="MXN"
+        # 1. Crear o actualizar empresa principal
+        print("🏢 Preparando empresa principal...")
+        empresa = await _upsert_by_scalar(
+            db,
+            Empresa,
+            (Empresa.rfc == "ODE260618ABC",),
+            {
+                "razon_social": "Óptica Demo S.A. de C.V.",
+                "nombre_comercial": "Óptica Demo",
+                "rfc": "ODE260618ABC",
+                "regimen_fiscal": "601",
+                "codigo_postal": "06600",
+                "representante_legal": "Admin Demo",
+                "moneda_base": "MXN",
+            },
+            "Empresa",
         )
-        db.add(empresa)
-        await db.flush()
-        print(f"✅ Empresa creada: {empresa.id}")
-        
-        # 2. Crear sucursal principal
-        print("🏪 Creando sucursal principal...")
-        sucursal = Sucursal(
-            id=uuid.uuid4(),
-            empresa_id=empresa.id,
-            codigo="MAIN",
-            nombre="Sucursal Principal",
-            direccion="Av. Reforma 123",
-            ciudad="Ciudad de México",
-            estado="CDMX",
-            codigo_postal="06600",
-            es_principal=True
+
+        # 2. Crear o actualizar sucursal principal
+        print("🏪 Preparando sucursal principal...")
+        sucursal = await _upsert_by_scalar(
+            db,
+            Sucursal,
+            (Sucursal.empresa_id == empresa.id, Sucursal.codigo == "MAIN"),
+            {
+                "empresa_id": empresa.id,
+                "codigo": "MAIN",
+                "nombre": "Sucursal Principal",
+                "direccion": "Av. Reforma 123",
+                "ciudad": "Ciudad de México",
+                "estado": "CDMX",
+                "codigo_postal": "06600",
+                "es_principal": True,
+            },
+            "Sucursal",
         )
-        db.add(sucursal)
-        await db.flush()
-        print(f"✅ Sucursal creada: {sucursal.id}")
-        
-        # 3. Crear roles del sistema
-        print("👥 Creando roles...")
+
+        # 3. Crear o actualizar roles del sistema
+        print("👥 Preparando roles...")
         roles_data = [
             {
                 "nombre": "SUPER_ADMIN",
@@ -59,7 +80,7 @@ async def create_initial_data():
                 "es_sistema": True,
                 "nivel_acceso": 10,
                 "permisos": ["*"],
-                "empresa_id": empresa.id
+                "empresa_id": empresa.id,
             },
             {
                 "nombre": "ADMIN_SUCURSAL",
@@ -67,7 +88,7 @@ async def create_initial_data():
                 "es_sistema": True,
                 "nivel_acceso": 8,
                 "permisos": ["*"],
-                "empresa_id": empresa.id
+                "empresa_id": empresa.id,
             },
             {
                 "nombre": "OPTOMETRISTA",
@@ -76,9 +97,9 @@ async def create_initial_data():
                 "nivel_acceso": 6,
                 "permisos": [
                     "clientes.*", "citas.*", "expedientes.*",
-                    "recetas.*", "ventas.ver", "agenda.*"
+                    "recetas.*", "ventas.ver", "agenda.*",
                 ],
-                "empresa_id": empresa.id
+                "empresa_id": empresa.id,
             },
             {
                 "nombre": "VENDEDOR",
@@ -87,9 +108,9 @@ async def create_initial_data():
                 "nivel_acceso": 5,
                 "permisos": [
                     "clientes.ver", "clientes.crear", "ventas.*",
-                    "caja.*", "productos.ver"
+                    "caja.*", "productos.ver",
                 ],
-                "empresa_id": empresa.id
+                "empresa_id": empresa.id,
             },
             {
                 "nombre": "ALMACENISTA",
@@ -97,9 +118,9 @@ async def create_initial_data():
                 "es_sistema": True,
                 "nivel_acceso": 4,
                 "permisos": [
-                    "inventario.*", "productos.ver", "ordenes_compra.*"
+                    "inventario.*", "productos.ver", "ordenes_compra.*",
                 ],
-                "empresa_id": empresa.id
+                "empresa_id": empresa.id,
             },
             {
                 "nombre": "CONTADOR",
@@ -108,91 +129,99 @@ async def create_initial_data():
                 "nivel_acceso": 7,
                 "permisos": [
                     "contabilidad.*", "reportes.*", "facturas.*",
-                    "cuentas_cobrar.*", "cuentas_pagar.*"
+                    "cuentas_cobrar.*", "cuentas_pagar.*",
                 ],
-                "empresa_id": empresa.id
-            }
+                "empresa_id": empresa.id,
+            },
         ]
-        
+
         roles = {}
         for rol_data in roles_data:
-            rol = Rol(**rol_data)
-            db.add(rol)
+            rol = await _upsert_by_scalar(
+                db,
+                Rol,
+                (Rol.nombre == rol_data["nombre"],),
+                rol_data,
+                f"Rol {rol_data['nombre']}",
+            )
             roles[rol_data["nombre"]] = rol
-            print(f"  ✅ Rol creado: {rol_data['nombre']}")
-        
-        await db.flush()
-        
-        # 4. Crear usuario administrador
-        print("👤 Creando usuario administrador...")
-        admin = Usuario(
-            id=uuid.uuid4(),
-            empresa_id=empresa.id,
-            username="admin",
-            email="admin@optica.com",
-            password_hash=get_password_hash("Admin123!"),
-            nombre_completo="Administrador del Sistema",
-            rol_id=roles["SUPER_ADMIN"].id,
-            sucursal_id=None,  # Admin global
-            esta_activo=True,
-            email_verificado=True
+
+        # 4. Crear o actualizar usuario administrador
+        print("👤 Preparando usuario administrador...")
+        await _upsert_by_scalar(
+            db,
+            Usuario,
+            (Usuario.username == "admin",),
+            {
+                "empresa_id": empresa.id,
+                "username": "admin",
+                "email": "admin@optica.com",
+                "password_hash": get_password_hash("Admin123!"),
+                "nombre_completo": "Administrador del Sistema",
+                "rol_id": roles["SUPER_ADMIN"].id,
+                "sucursal_id": None,  # Admin global
+                "esta_activo": True,
+                "email_verificado": True,
+            },
+            "Usuario admin",
         )
-        db.add(admin)
-        print(f"✅ Admin creado: {admin.username}")
-        
-        # 5. Crear usuarios de ejemplo
-        print("👥 Creando usuarios de ejemplo...")
+
+        # 5. Crear o actualizar usuarios de ejemplo
+        print("👥 Preparando usuarios de ejemplo...")
         usuarios_demo = [
             {
                 "username": "admin_sucursal",
                 "email": "admin_sucursal@optica.com",
                 "nombre": "Admin Sucursal Demo",
                 "rol": "ADMIN_SUCURSAL",
-                "sucursal": sucursal.id
+                "sucursal": sucursal.id,
             },
             {
                 "username": "optometrista",
                 "email": "optometrista@optica.com",
                 "nombre": "Dr. Demo Optometrista",
                 "rol": "OPTOMETRISTA",
-                "sucursal": sucursal.id
+                "sucursal": sucursal.id,
             },
             {
                 "username": "vendedor",
                 "email": "vendedor@optica.com",
                 "nombre": "Vendedor Demo",
                 "rol": "VENDEDOR",
-                "sucursal": sucursal.id
+                "sucursal": sucursal.id,
             },
             {
                 "username": "contador",
                 "email": "contador@optica.com",
                 "nombre": "Contador Demo",
                 "rol": "CONTADOR",
-                "sucursal": sucursal.id
-            }
+                "sucursal": sucursal.id,
+            },
         ]
-        
+
         for user_data in usuarios_demo:
-            user = Usuario(
-                id=uuid.uuid4(),
-                empresa_id=empresa.id,
-                username=user_data["username"],
-                email=user_data["email"],
-                password_hash=get_password_hash("Demo123!"),
-                nombre_completo=user_data["nombre"],
-                rol_id=roles[user_data["rol"]].id,
-                sucursal_id=user_data["sucursal"],
-                esta_activo=True,
-                email_verificado=True
+            await _upsert_by_scalar(
+                db,
+                Usuario,
+                (Usuario.username == user_data["username"],),
+                {
+                    "empresa_id": empresa.id,
+                    "username": user_data["username"],
+                    "email": user_data["email"],
+                    "password_hash": get_password_hash("Demo123!"),
+                    "nombre_completo": user_data["nombre"],
+                    "rol_id": roles[user_data["rol"]].id,
+                    "sucursal_id": user_data["sucursal"],
+                    "esta_activo": True,
+                    "email_verificado": True,
+                },
+                f"Usuario {user_data['username']}",
             )
-            db.add(user)
-            print(f"  ✅ Usuario creado: {user_data['username']}")
-        
+
         await db.commit()
-        
+
         print("\n" + "="*60)
-        print("🎉 DATOS INICIALES CREADOS EXITOSAMENTE")
+        print("🎉 DATOS INICIALES PREPARADOS EXITOSAMENTE")
         print("="*60)
         print("\n📋 CREDENCIALES DE ACCESO:")
         print("-"*60)
