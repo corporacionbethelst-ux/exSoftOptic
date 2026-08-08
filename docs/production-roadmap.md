@@ -20,7 +20,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 12 | Operación y soporte | En curso | Aprobar guardias, escalamiento y ejecutar simulacro SEV-1 |
 | 13 | Staging y ensayo de release | En curso | Ejecutar el ensayo y obtener UAT aprobada |
 | 14 | Lanzamiento controlado | En curso | Ejecutar canary real y aprobar la ventana de cambio |
-| 15 | Estabilización y mejora continua | Pendiente | Métricas post-lanzamiento y revisión de incidentes |
+| 15 | Estabilización y mejora continua | En curso | Completar 14 días de observación y revisión post-implementación |
 
 ## Puerta automatizada actual
 
@@ -184,6 +184,18 @@ make readiness
 - [ ] Configurar tráfico canary/blue-green en el balanceador de la plataforma elegida.
 - [ ] Aprobar ventana, responsables, comunicación y versión estable de rollback.
 - [ ] Ejecutar el lanzamiento controlado y conservar evidencia de cada etapa.
+
+## Avance de la fase 15
+
+- [x] Existe una política versionada de estabilización de 14 días con cuatro checkpoints.
+- [x] Se evalúan disponibilidad, errores, p95, incidentes y defectos críticos por release SHA.
+- [x] El evaluador distingue observación, revisión pendiente, acción correctiva y estabilización.
+- [x] Los incumplimientos críticos devuelven código no cero para activar seguimiento.
+- [x] El cierre exige revisiones de capacidad, soporte, seguridad, producto y deuda técnica.
+- [x] Existe runbook de evidencia diaria y revisión post-implementación.
+- [ ] Ejecutar los checkpoints con telemetría real del lanzamiento productivo.
+- [ ] Realizar revisión post-implementación y asignar responsables a cada mejora.
+- [ ] Obtener aprobación final de servicio estable por negocio, operaciones y tecnología.
 
 ## Regla de avance
 
