@@ -44,3 +44,33 @@ async def test_presupuesto_compromete_monto_y_bloquea_exceso(db_session):
             empresa_id=empresa.id,
             payload=ComprometerPresupuestoRequest(presupuesto_id=presupuesto.id, cuenta_codigo="501.01", monto=Decimal("700")),
         )
+
+
+@pytest.mark.asyncio
+async def test_presupuesto_lista_centros_y_presupuestos_con_lineas(db_session):
+    empresa = Empresa(id=uuid.uuid4(), razon_social="Budget List SA", rfc="BUL260619AA1", regimen_fiscal="601", codigo_postal="06600")
+    db_session.add(empresa)
+    await db_session.flush()
+
+    service = BudgetService(db_session)
+    centro_optica = await service.crear_centro_costo(empresa_id=empresa.id, payload=CentroCostoCreate(codigo="OPT", nombre="Óptica"))
+    centro_lab = await service.crear_centro_costo(empresa_id=empresa.id, payload=CentroCostoCreate(codigo="LAB", nombre="Laboratorio"))
+    presupuesto = await service.crear_presupuesto(
+        empresa_id=empresa.id,
+        payload=PresupuestoCreate(
+            centro_costo_id=centro_lab.id,
+            folio="P-LAB-1",
+            nombre="Presupuesto laboratorio",
+            fecha_inicio=date(2026, 7, 1),
+            fecha_fin=date(2026, 7, 31),
+            lineas=[PresupuestoLineaCreate(cuenta_codigo="501.01", monto=Decimal("1500"))],
+        ),
+    )
+
+    centros = await service.listar_centros_costo(empresa_id=empresa.id)
+    presupuestos = await service.listar_presupuestos(empresa_id=empresa.id)
+
+    assert [centro.codigo for centro in centros] == ["LAB", "OPT"]
+    assert presupuestos[0].id == presupuesto.id
+    assert presupuestos[0].lineas[0].cuenta_codigo == "501.01"
+    assert centro_optica.id != centro_lab.id

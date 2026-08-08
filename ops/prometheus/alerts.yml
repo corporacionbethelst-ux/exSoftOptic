@@ -1,0 +1,51 @@
+groups:
+  - name: exsoftoptic-api
+    rules:
+      - alert: ExSoftOpticApiDown
+        expr: up{job="exsoftoptic-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "La API exSoftOptic no responde al scraper"
+          description: "Prometheus no puede consultar /metrics durante más de 2 minutos."
+
+      - alert: ExSoftOpticHighErrorRate
+        expr: |
+          sum(rate(exsoftoptic_responses_total{status_code=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(exsoftoptic_responses_total[5m])), 0.001)
+          > 0.05
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tasa de errores 5xx superior al 5%"
+          description: "La tasa agregada de respuestas 5xx superó el objetivo durante 10 minutos."
+
+      - alert: ExSoftOpticHighAverageLatency
+        expr: exsoftoptic_request_latency_average_ms > 750
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latencia media elevada"
+          description: "La latencia media del proceso supera 750 ms durante 10 minutos."
+
+      - alert: ExSoftOpticUnhandledExceptions
+        expr: increase(exsoftoptic_exceptions_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Excepciones no controladas detectadas"
+          description: "La API registró al menos una excepción no controlada en cinco minutos."
+
+      - alert: ExSoftOpticProcessRestarted
+        expr: exsoftoptic_uptime_seconds < 300
+        for: 1m
+        labels:
+          severity: info
+        annotations:
+          summary: "Proceso backend reiniciado recientemente"
+          description: "El proceso reporta menos de cinco minutos de uptime."

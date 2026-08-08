@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 import hashlib
 import secrets
 from jose import JWTError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -17,11 +18,27 @@ from app.crud.usuario import crud_usuario
 from app.models.usuario import Usuario, Sesion
 from app.schemas.auth import LoginRequest, TokenData
 
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 class AuthService:
     """Servicio de autenticación"""
     
     @staticmethod
-    async def login(db: AsyncSession, login_data: LoginRequest, ip: str = None, user_agent: str = None) -> Dict[str, Any]:
+    async def login(
+        db: AsyncSession,
+        login_data: LoginRequest,
+        ip: str = None,
+        user_agent: str = None,
+    ) -> Dict[str, Any]:
         """Login de usuario"""
         # Autenticar usuario
         usuario = await crud_usuario.authenticate(
@@ -57,7 +74,8 @@ class AuthService:
             refresh_token_hash=hashlib.sha256(refresh_token.encode()).hexdigest(),
             ip_address=ip,
             user_agent=user_agent[:500] if user_agent else None,
-            expira_en=datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            # La sesión permanece activa durante la vigencia del refresh token.
+            expira_en=_utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         )
         db.add(sesion)
         await db.flush()
@@ -92,7 +110,7 @@ class AuthService:
             )
             sesion = result.scalar_one_or_none()
             
-            if not sesion or sesion.expira_en < datetime.utcnow():
+            if not sesion or _as_utc(sesion.expira_en) < _utcnow():
                 raise ValueError("Sesión expirada")
             
             # Obtener usuario actualizado
@@ -117,7 +135,8 @@ class AuthService:
             # Actualizar sesión
             sesion.token_hash = hashlib.sha256(new_access_token.encode()).hexdigest()
             sesion.refresh_token_hash = hashlib.sha256(new_refresh_token.encode()).hexdigest()
-            sesion.ultima_actividad = datetime.utcnow()
+            sesion.ultima_actividad = _utcnow()
+            sesion.expira_en = _utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
             await db.flush()
             
             return {
@@ -185,7 +204,7 @@ class AuthService:
                 raise ValueError("Sesión no válida")
             
             # Actualizar última actividad
-            sesion.ultima_actividad = datetime.utcnow()
+            sesion.ultima_actividad = _utcnow()
             
             # Obtener usuario
             usuario = await crud_usuario.get_with_rol(db, user_id)
@@ -223,7 +242,10 @@ class AuthService:
         return success
     
     @staticmethod
-    async def generate_password_reset_token(db: AsyncSession, email: str) -> Optional[str]:
+    async def generate_password_reset_token(
+        db: AsyncSession,
+        email: str,
+    ) -> Optional[str]:
         """Generar token para reset de contraseña"""
         usuario = await crud_usuario.get_by_email(db, email)
         if not usuario:
@@ -236,7 +258,7 @@ class AuthService:
         usuario.preferencias = usuario.preferencias or {}
         usuario.preferencias["reset_token"] = {
             "token": hashlib.sha256(token.encode()).hexdigest(),
-            "expires": (datetime.utcnow() + timedelta(hours=1)).isoformat()
+            "expires": (_utcnow() + timedelta(hours=1)).isoformat()
         }
         await db.flush()
         
@@ -252,7 +274,6 @@ class AuthService:
         token_hash = hashlib.sha256(token.encode()).hexdigest()
         
         # Buscar usuario con este token
-        from sqlalchemy import select
         result = await db.execute(
             select(Usuario).where(Usuario.deleted_at.is_(None))
         )
@@ -261,8 +282,10 @@ class AuthService:
         for usuario in usuarios:
             if usuario.preferencias and usuario.preferencias.get("reset_token"):
                 reset_data = usuario.preferencias["reset_token"]
-                if (reset_data.get("token") == token_hash and
-                    datetime.fromisoformat(reset_data.get("expires")) > datetime.utcnow()):
+                token_expires = _as_utc(
+                    datetime.fromisoformat(reset_data.get("expires"))
+                )
+                if reset_data.get("token") == token_hash and token_expires > _utcnow():
                     
                     await crud_usuario.reset_password(
                         db,
