@@ -10,8 +10,61 @@ from app.schemas.crm import CitaOpticaCreate, CitaOpticaResponse, RecordatorioCl
 from app.schemas.ventas import ClienteCreate, ClienteResponse, PacienteCreate, PacienteResponse, RecetaOpticaCreate, RecetaOpticaResponse
 from app.services.crm_service import CRMService
 from app.services.secured_audit import audit_user_action
+from app.schemas.privacy import SubjectAnonymizeRequest, SubjectAnonymizeResponse
+from app.services.privacy_service import PrivacyService
 
 router = APIRouter()
+
+
+@router.get("/privacy/clientes/{cliente_id}/export", dependencies=[Depends(require_permissions(["privacidad.solicitudes.exportar"]))])
+async def exportar_datos_personales(
+    cliente_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    try:
+        export = await PrivacyService(db).export_subject(
+            empresa_id=current_user.empresa_id, cliente_id=cliente_id
+        )
+        await audit_user_action(
+            db,
+            current_user=current_user,
+            accion="PRIVACIDAD_EXPORTAR",
+            entidad="Cliente",
+            entidad_id=cliente_id,
+            payload={"sections": sorted(export.keys())},
+        )
+        return export
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post(
+    "/privacy/clientes/{cliente_id}/anonymize",
+    response_model=SubjectAnonymizeResponse,
+    dependencies=[Depends(require_permissions(["privacidad.solicitudes.anonimizar"]))],
+)
+async def anonimizar_datos_personales(
+    cliente_id: UUID,
+    payload: SubjectAnonymizeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    try:
+        result = await PrivacyService(db).anonymize_subject(
+            empresa_id=current_user.empresa_id, cliente_id=cliente_id
+        )
+        await audit_user_action(
+            db,
+            current_user=current_user,
+            accion="PRIVACIDAD_ANONIMIZAR",
+            entidad="Cliente",
+            entidad_id=cliente_id,
+            payload={"reason": payload.reason, **result},
+        )
+        return result
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.get("/clientes", response_model=list[ClienteResponse], dependencies=[Depends(require_permissions(["crm.clientes.leer"]))])

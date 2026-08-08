@@ -16,7 +16,7 @@ Este documento es la fuente de verdad para medir el avance hacia producción. Un
 | 8 | Rendimiento y capacidad | En curso | Ejecutar baseline y prueba sostenida con datos representativos |
 | 9 | Resiliencia e integraciones | En curso | Validar fallos inyectados contra sandbox de proveedores |
 | 10 | Calidad funcional E2E | En curso | Ampliar cobertura a flujos transaccionales con backend real |
-| 11 | Cumplimiento y privacidad | Pendiente | Políticas de retención, consentimiento y derechos ARCO |
+| 11 | Cumplimiento y privacidad | En curso | Aprobación legal de retención, consentimiento y derechos ARCO |
 | 12 | Operación y soporte | Parcial | Guardias, escalamiento e incident response probado |
 | 13 | Staging y ensayo de release | Pendiente | Despliegue idéntico a producción y UAT aprobada |
 | 14 | Lanzamiento controlado | Pendiente | Plan canary/blue-green, rollback y ventana aprobados |
@@ -136,6 +136,18 @@ make readiness
 - [ ] Ejecutar los mismos recorridos contra backend y base de datos reales en staging.
 - [ ] Cubrir ventas, compras, inventario, laboratorio y facturación con datos aislados.
 - [ ] Añadir matriz Chromium/Firefox/WebKit y viewport móvil para release candidates.
+
+## Avance de la fase 11
+
+- [x] Existe clasificación documentada de datos personales, clínicos y secretos.
+- [x] Operadores autorizados pueden exportar un sujeto con aislamiento por empresa y auditoría.
+- [x] Existe anonimización confirmada que conserva integridad referencial y registros obligatorios.
+- [x] Exportación y anonimización usan permisos RBAC independientes.
+- [x] Logs estructurados redactan bearer tokens, secretos, passwords, API keys y emails.
+- [x] Existe una propuesta de retención y checklist operativo sujeto a aprobación legal.
+- [ ] Obtener aprobación jurídica por país para privacidad, expediente clínico y fiscalidad.
+- [ ] Registrar consentimiento, finalidad, versión del aviso y revocación en el modelo de datos.
+- [ ] Automatizar retención únicamente después de aprobar legal holds y períodos definitivos.
 
 ## Regla de avance
 

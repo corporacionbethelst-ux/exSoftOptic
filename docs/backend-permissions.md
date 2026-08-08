@@ -108,6 +108,11 @@ Use it as the baseline for RBAC role templates and access reviews.
 - `presupuestos.crear`
 - `presupuestos.leer`
 
+## privacidad
+
+- `privacidad.solicitudes.anonimizar`
+- `privacidad.solicitudes.exportar`
+
 ## productos
 
 - `productos.crear`

@@ -79,6 +79,8 @@
       "presupuestos.comprometer",
       "presupuestos.crear",
       "presupuestos.leer",
+      "privacidad.solicitudes.anonimizar",
+      "privacidad.solicitudes.exportar",
       "productos.crear",
       "productos.editar",
       "productos.eliminar",

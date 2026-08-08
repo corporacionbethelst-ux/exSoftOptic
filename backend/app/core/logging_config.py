@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timezone
 
 from app.core.request_context import get_request_context
+from app.core.pii_redaction import redact_sensitive_text
 
 
 class JsonFormatter(logging.Formatter):
@@ -16,7 +17,7 @@ class JsonFormatter(logging.Formatter):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "message": redact_sensitive_text(record.getMessage()),
         }
         if context:
             payload["correlation_id"] = context.correlation_id
@@ -25,7 +26,7 @@ class JsonFormatter(logging.Formatter):
             if value is not None:
                 payload[key] = value
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception"] = redact_sensitive_text(self.formatException(record.exc_info))
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
