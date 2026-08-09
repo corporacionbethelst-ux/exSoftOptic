@@ -5,7 +5,7 @@
 ipython==8.21.0
 ipdb==0.13.13
 pytest-watch==4.2.0
-pre-commit==3.6.0
+pre-commit==4.6.1
 
 # Debugging
-debugpy==1.8.1
+debugpy==1.8.21
