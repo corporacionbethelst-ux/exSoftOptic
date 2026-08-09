@@ -129,6 +129,8 @@ GET /api/v1/observabilidad/metrics/prometheus
 
 Tune these settings per environment: `MAX_FAILED_LOGIN_ATTEMPTS`, `ACCOUNT_LOCK_MINUTES`, `CFDI_RETRY_ATTEMPTS` and `BANKING_RETRY_ATTEMPTS`.
 
+External HTTP adapters retry only transient failures (connection/timeouts, 408, 425, 429 and selected 5xx responses). Permanent client errors fail immediately. Independent CFDI and banking circuit breakers open after consecutive transient failures, reject calls during the recovery window and allow a single half-open probe afterward. Configure them with `*_CIRCUIT_FAILURE_THRESHOLD` and `*_CIRCUIT_RECOVERY_SECONDS`.
+
 ## 13. Container deployment hardening
 
 The backend image is built from `backend/Dockerfile` with:
@@ -163,7 +165,7 @@ After starting the API locally or in staging, run a lightweight load smoke test:
 
 ```bash
 make load-smoke
-python scripts/load_smoke.py --url https://staging.example.com/health --requests 100 --concurrency 10 --max-p95-ms 750
+python scripts/load_smoke.py --slo-file ../ops/performance/staging-slo.json --output-json ./artifacts/load-smoke.json
 ```
 
 Use this as a fast regression check, not as a full capacity test. Track:
@@ -173,6 +175,27 @@ Use this as a fast regression check, not as a full capacity test. Track:
 - p95 latency;
 - 5xx responses during deployment windows;
 - differences between `/health`, `/ready` and representative authenticated endpoints.
+
+Override a plan from the CLI for an authenticated business endpoint without storing credentials:
+
+```bash
+python scripts/load_smoke.py --slo-file ../ops/performance/staging-slo.json \
+  --url https://staging.example.com/api/v1/productos/ \
+  --header "Authorization: Bearer $ACCESS_TOKEN" --requests 500 --concurrency 20
+```
+
+## Browser end-to-end smoke
+
+The deterministic Chromium smoke validates rejected credentials, successful login, dashboard loading, user navigation, logout and transparent access-token rotation:
+
+```bash
+python -m pip install -r e2e/requirements.txt
+python -m playwright install chromium
+npm ci --prefix frontend && npm --prefix frontend run build
+make browser-e2e
+```
+
+The browser test mocks only the API boundary; production assets and authentication/session code execute in a real browser. CI preserves Playwright trace and failure screenshots under the `browser-e2e-artifacts` artifact.
 
 ## 11. RBAC permission governance
 
@@ -199,6 +222,14 @@ GET /api/v1/observabilidad/metrics
 GET /api/v1/observabilidad/metrics/prometheus
 ```
 
+Prometheus should scrape the dedicated internal endpoint with a separate bearer token:
+
+```bash
+curl -H "Authorization: Bearer $METRICS_TOKEN" http://backend:8000/metrics
+```
+
+Starter scrape configuration and alerts live in `ops/prometheus/`. Mount `METRICS_TOKEN` as a secret file for Prometheus; do not reuse a user JWT or expose `/metrics` through the public reverse proxy.
+
 Use the JSON endpoint for quick operator inspection and the Prometheus text endpoint for internal scrapers. Monitor at least:
 
 - `exsoftoptic_requests_total` for traffic volume.
@@ -215,11 +246,19 @@ Create a PostgreSQL custom-format backup:
 make db-backup
 ```
 
+Every successful backup now creates a sibling `.dump.sha256` manifest. Verify it before transferring or restoring:
+
+```bash
+make db-backup-verify file=./backups/exsoftoptic-backend-YYYYMMDDTHHMMSSZ.dump
+```
+
 Restore a backup into the configured `DATABASE_URL`:
 
 ```bash
 make db-restore file=./backups/exsoftoptic-backend-YYYYMMDDTHHMMSSZ.dump
 ```
+
+The Makefile restore target requires a valid SHA-256 manifest and refuses a missing or modified backup. Database passwords are passed to PostgreSQL tools through `PGPASSWORD`, not exposed in command-line arguments.
 
 Dry-run the generated commands without touching the database:
 

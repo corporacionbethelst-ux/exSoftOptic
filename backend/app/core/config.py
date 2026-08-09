@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     # Aplicación
     APP_NAME: str = "Sistema Óptica"
     APP_VERSION: str = "1.0.0"
+    RELEASE_SHA: str = "unknown"
+    DEPLOYED_AT: str = "unknown"
     DEBUG: bool = True
     ENVIRONMENT: str = "development"
     
@@ -47,6 +49,8 @@ class Settings(BaseSettings):
     CFDI_API_KEY: str = ""
     CFDI_TIMEOUT_SECONDS: float = 10.0
     CFDI_RETRY_ATTEMPTS: int = 3
+    CFDI_CIRCUIT_FAILURE_THRESHOLD: int = 5
+    CFDI_CIRCUIT_RECOVERY_SECONDS: float = 30.0
     CFDI_CERTIFICATE_PATH: str = ""
     CFDI_KEY_PATH: str = ""
     CFDI_PASSWORD_CERT: str = ""
@@ -57,6 +61,8 @@ class Settings(BaseSettings):
     BANKING_API_KEY: str = ""
     BANKING_TIMEOUT_SECONDS: float = 10.0
     BANKING_RETRY_ATTEMPTS: int = 3
+    BANKING_CIRCUIT_FAILURE_THRESHOLD: int = 5
+    BANKING_CIRCUIT_RECOVERY_SECONDS: float = 30.0
     
     # Storage
     UPLOAD_DIR: str = "./uploads"
@@ -65,6 +71,8 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "./logs/app.log"
+    LOG_FORMAT: str = "text"
+    METRICS_TOKEN: str = ""
     
     class Config:
         env_file = ".env"

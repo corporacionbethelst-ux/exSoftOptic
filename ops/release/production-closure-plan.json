@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "phases": [
+    {"phase": 1, "owner": "engineering", "next_action": "run-full-readiness-and-functional-smoke"},
+    {"phase": 2, "owner": "engineering", "next_action": "enforce-required-branch-checks"},
+    {"phase": 3, "owner": "platform", "next_action": "integrate-managed-secret-store"},
+    {"phase": 4, "owner": "security", "next_action": "complete-dast-and-independent-pentest"},
+    {"phase": 5, "owner": "data", "next_action": "execute-and-time-disposable-restore"},
+    {"phase": 6, "owner": "platform", "next_action": "approve-target-platform-tls-dns-and-ha"},
+    {"phase": 7, "owner": "operations", "next_action": "deploy-observability-stack-and-test-alerts"},
+    {"phase": 8, "owner": "performance", "next_action": "run-baseline-and-soak-tests"},
+    {"phase": 9, "owner": "integrations", "next_action": "run-provider-sandbox-fault-injection"},
+    {"phase": 10, "owner": "quality", "next_action": "run-real-backend-transactional-e2e"},
+    {"phase": 11, "owner": "legal", "next_action": "approve-privacy-retention-and-consent"},
+    {"phase": 12, "owner": "operations", "next_action": "approve-on-call-and-run-sev1-game-day"},
+    {"phase": 13, "owner": "release-management", "next_action": "execute-staging-rehearsal-and-uat"},
+    {"phase": 14, "owner": "release-management", "next_action": "configure-and-run-production-canary"},
+    {"phase": 15, "owner": "service-owner", "next_action": "complete-stabilization-and-post-implementation-review"}
+  ]
+}

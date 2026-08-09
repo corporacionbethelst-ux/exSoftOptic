@@ -1,0 +1,136 @@
+name: exsoftoptic-production
+
+x-service-security: &service-security
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  init: true
+
+services:
+  postgres:
+    <<: *service-security
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${OPTICA_POSTGRES_USER:?required}
+      POSTGRES_PASSWORD: ${OPTICA_POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${OPTICA_POSTGRES_DB:?required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+
+  redis:
+    <<: *service-security
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?required}"]
+    volumes:
+      - redis_data:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a '$${REDIS_PASSWORD}' ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?required}
+    cap_add: [CHOWN, SETGID, SETUID]
+
+  mongodb:
+    <<: *service-security
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${OPTICA_MONGO_USER:?required}
+      MONGO_INITDB_ROOT_PASSWORD: ${OPTICA_MONGO_PASSWORD:?required}
+    volumes:
+      - mongodb_data:/data/db
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --username '$${MONGO_INITDB_ROOT_USERNAME}' --password '$${MONGO_INITDB_ROOT_PASSWORD}' --authenticationDatabase admin --eval 'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    cap_add: [CHOWN, FOWNER, SETGID, SETUID]
+
+  migration-job:
+    <<: *service-security
+    build: ./backend
+    image: ${BACKEND_IMAGE:-exsoftoptic-backend:production}
+    command: ["python", "-c", "from alembic.config import main; main()", "upgrade", "head"]
+    environment: &backend-environment
+      ENVIRONMENT: production
+      DEBUG: "false"
+      LOG_FORMAT: json
+      RELEASE_SHA: ${RELEASE_SHA:?required}
+      DEPLOYED_AT: ${DEPLOYED_AT:?required}
+      RUN_MIGRATIONS_ON_START: "false"
+      SECRET_KEY: ${SECRET_KEY:?required}
+      METRICS_TOKEN: ${METRICS_TOKEN:?required}
+      DATABASE_URL: postgresql+asyncpg://${OPTICA_POSTGRES_USER:?required}:${OPTICA_POSTGRES_PASSWORD:?required}@postgres:5432/${OPTICA_POSTGRES_DB:?required}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?required}@redis:6379/0
+      MONGODB_URL: mongodb://${OPTICA_MONGO_USER:?required}:${OPTICA_MONGO_PASSWORD:?required}@mongodb:27017/${OPTICA_MONGO_DB:?required}?authSource=admin
+      CORS_ORIGINS: ${CORS_ORIGINS:?required}
+      CFDI_PROVIDER: ${CFDI_PROVIDER:?required}
+      CFDI_API_URL: ${CFDI_API_URL:?required}
+      CFDI_API_KEY: ${CFDI_API_KEY:?required}
+      BANKING_PROVIDER: ${BANKING_PROVIDER:?required}
+      BANKING_API_URL: ${BANKING_API_URL:?required}
+      BANKING_API_KEY: ${BANKING_API_KEY:?required}
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [data]
+    profiles: [migration]
+
+  backend:
+    <<: *service-security
+    build: ./backend
+    image: ${BACKEND_IMAGE:-exsoftoptic-backend:production}
+    environment: *backend-environment
+    expose: ["8000"]
+    volumes:
+      - uploads:/app/uploads
+      - logs:/app/logs
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    read_only: true
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mongodb: {condition: service_healthy}
+    networks: [app, data]
+
+  frontend:
+    <<: *service-security
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+    image: ${FRONTEND_IMAGE:-exsoftoptic-frontend:production}
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+      - /var/cache/nginx:size=64m,mode=0755
+    depends_on:
+      backend: {condition: service_healthy}
+    networks: [app]
+
+volumes:
+  postgres_data:
+  redis_data:
+  mongodb_data:
+  uploads:
+  logs:
+
+networks:
+  app:
+    internal: false
+  data:
+    internal: true

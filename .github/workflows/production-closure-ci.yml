@@ -1,0 +1,51 @@
+name: Production Closure Report
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docs/production-roadmap.md"
+      - "ops/release/production-closure-plan.json"
+      - "scripts/audit_production_closure.py"
+      - ".github/workflows/production-closure-ci.yml"
+  push:
+    branches: [main, develop]
+    paths:
+      - "docs/production-roadmap.md"
+      - "ops/release/production-closure-plan.json"
+      - "scripts/audit_production_closure.py"
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate roadmap and generate closure backlog
+        run: python3 scripts/audit_production_closure.py
+      - name: Publish closure summary
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          report = json.load(open("artifacts/production-closure-report.json", encoding="utf-8"))
+          print("## Production closure")
+          print(f"- Closed phases: {report['closed_phases']}/15")
+          print(f"- Open phases: {report['open_phases']}")
+          print(f"- Pending exit criteria: {report['pending_criteria']}")
+          print("\n| Phase | Owner | Pending | Next action |")
+          print("|---:|---|---:|---|")
+          for phase in report["phases"]:
+              print(f"| {phase['phase']} | {phase['owner']} | {phase['pending_criteria']} | {phase['next_action']} |")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-closure-report
+          path: artifacts/production-closure-report.json
+          if-no-files-found: error
+          retention-days: 30

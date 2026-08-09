@@ -1,0 +1,16 @@
+{
+  "environment": "staging",
+  "compose_file": "docker-compose.production.yml",
+  "health_path": "/health",
+  "readiness_path": "/ready",
+  "readiness_timeout_seconds": 180,
+  "required_evidence": [
+    "compose-config",
+    "runtime-config-audit",
+    "migration-job",
+    "health-and-readiness",
+    "api-smoke",
+    "browser-smoke",
+    "uat-approval"
+  ]
+}
