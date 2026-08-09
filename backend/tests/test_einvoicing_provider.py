@@ -122,3 +122,22 @@ async def test_http_einvoicing_provider_rejects_invalid_issue_response():
 
     with pytest.raises(EInvoicingProviderError):
         await provider.issue_invoice(_payload())
+
+
+@pytest.mark.asyncio
+async def test_http_einvoicing_provider_does_not_retry_client_errors():
+    calls = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(400, text="invalid invoice", request=request)
+
+    provider = HttpEInvoicingProvider(
+        "https://pac.example",
+        "secret-token",
+        transport=httpx.MockTransport(handler),
+    )
+    with pytest.raises(EInvoicingProviderError, match="400"):
+        await provider.issue_invoice(_payload())
+    assert calls == 1

@@ -36,3 +36,34 @@ async def test_retry_async_rejects_invalid_attempts():
 
     with pytest.raises(ValueError):
         await retry_async(operation, RetryPolicy(attempts=0))
+
+
+@pytest.mark.asyncio
+async def test_retry_async_stops_when_error_is_not_transient():
+    calls = 0
+
+    async def operation():
+        nonlocal calls
+        calls += 1
+        raise RuntimeError("permanent")
+
+    with pytest.raises(RuntimeError, match="permanent"):
+        await retry_async(
+            operation,
+            RetryPolicy(
+                attempts=5,
+                base_delay_seconds=0,
+                retry_exceptions=(RuntimeError,),
+                should_retry=lambda exc: False,
+            ),
+        )
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_retry_async_validates_jitter_range():
+    async def operation():
+        return "unused"
+
+    with pytest.raises(ValueError, match="jitter_ratio"):
+        await retry_async(operation, RetryPolicy(jitter_ratio=1.1))
