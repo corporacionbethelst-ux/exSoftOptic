@@ -24,6 +24,8 @@ python3 scripts/evaluate_production_rollout.py \
 
 La decisión queda en `artifacts/production-rollout-decision.json`. `advance` autoriza únicamente la siguiente etapa; `hold` conserva el porcentaje; `rollback` devuelve código 2 y exige retirar el candidato. El cambio de tráfico se realiza en el balanceador de la plataforma, nunca desde este evaluador.
 
+Todas las métricas son obligatorias, finitas y no negativas; tasas fuera de `0..1`, booleanos, `NaN` e infinitos invalidan la evaluación en lugar de permitir una promoción accidental.
+
 ## Rollback y aborto
 
 1. Congelar nuevos incrementos y declarar el canal operativo.

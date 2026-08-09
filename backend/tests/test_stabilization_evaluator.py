@@ -1,5 +1,8 @@
 import importlib.util
+import math
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,3 +46,19 @@ def test_missing_review_blocks_stabilization():
     status, reasons = MODULE.evaluate(POLICY, evidence)
     assert status == "review-required"
     assert any(reason.startswith("missing_review:") for reason in reasons)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("availability", math.nan), ("error_rate", -0.1), ("p95_ms", "invalid"),
+     ("sev1_incidents", -1), ("days_observed", True)],
+)
+def test_invalid_evidence_never_stabilizes(field, value):
+    evidence = {**HEALTHY, field: value}
+    with pytest.raises(ValueError, match=field):
+        MODULE.evaluate(POLICY, evidence)
+
+
+def test_completed_reviews_must_be_a_list():
+    with pytest.raises(ValueError, match="completed_reviews"):
+        MODULE.evaluate(POLICY, {**HEALTHY, "completed_reviews": "all"})

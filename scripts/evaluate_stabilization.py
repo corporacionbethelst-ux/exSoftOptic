@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from datetime import datetime, timezone
@@ -15,9 +16,32 @@ SHA_RE = re.compile(r"^[0-9a-f]{7,64}$", re.IGNORECASE)
 
 
 def load_object(path: Path) -> dict:
-    value = json.loads(path.read_text(encoding="utf-8"))
+    value = json.loads(
+        path.read_text(encoding="utf-8"),
+        parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"invalid JSON number: {value}")),
+    )
     if not isinstance(value, dict):
         raise ValueError(f"{path} must contain a JSON object")
+    return value
+
+
+def evidence_number(evidence: dict, name: str, *, maximum: float | None = None) -> float:
+    if name not in evidence or isinstance(evidence[name], bool):
+        raise ValueError(f"evidence {name} is required and must be numeric")
+    try:
+        value = float(evidence[name])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"evidence {name} must be numeric") from exc
+    if not math.isfinite(value) or value < 0 or (maximum is not None and value > maximum):
+        suffix = f" between 0 and {maximum}" if maximum is not None else " finite and non-negative"
+        raise ValueError(f"evidence {name} must be{suffix}")
+    return value
+
+
+def evidence_count(evidence: dict, name: str) -> int:
+    value = evidence.get(name)
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        raise ValueError(f"evidence {name} must be a non-negative integer")
     return value
 
 
@@ -43,21 +67,31 @@ def validate_policy(policy: dict) -> None:
 
 def evaluate(policy: dict, evidence: dict) -> tuple[str, list[str]]:
     t = policy["thresholds"]
+    availability = evidence_number(evidence, "availability", maximum=1.0)
+    error_rate = evidence_number(evidence, "error_rate", maximum=1.0)
+    p95_ms = evidence_number(evidence, "p95_ms")
+    sev1_incidents = evidence_count(evidence, "sev1_incidents")
+    sev2_incidents = evidence_count(evidence, "sev2_incidents")
+    open_critical_defects = evidence_count(evidence, "open_critical_defects")
+    days_observed = evidence_count(evidence, "days_observed")
+    completed = evidence.get("completed_reviews")
+    if not isinstance(completed, list) or any(not isinstance(item, str) for item in completed):
+        raise ValueError("evidence completed_reviews must be a list of strings")
     breaches: list[str] = []
     checks = (
-        (float(evidence.get("availability", 0.0)) < t["minimum_availability"], "availability_below_target"),
-        (float(evidence.get("error_rate", 1.0)) > t["maximum_error_rate"], "error_rate_above_target"),
-        (float(evidence.get("p95_ms", float("inf"))) > t["maximum_p95_ms"], "p95_above_target"),
-        (int(evidence.get("sev1_incidents", 0)) > t["maximum_sev1_incidents"], "sev1_incident_limit_exceeded"),
-        (int(evidence.get("sev2_incidents", 0)) > t["maximum_sev2_incidents"], "sev2_incident_limit_exceeded"),
-        (int(evidence.get("open_critical_defects", 0)) > t["maximum_open_critical_defects"], "critical_defects_open"),
+        (availability < t["minimum_availability"], "availability_below_target"),
+        (error_rate > t["maximum_error_rate"], "error_rate_above_target"),
+        (p95_ms > t["maximum_p95_ms"], "p95_above_target"),
+        (sev1_incidents > t["maximum_sev1_incidents"], "sev1_incident_limit_exceeded"),
+        (sev2_incidents > t["maximum_sev2_incidents"], "sev2_incident_limit_exceeded"),
+        (open_critical_defects > t["maximum_open_critical_defects"], "critical_defects_open"),
     )
     breaches.extend(reason for failed, reason in checks if failed)
-    completed_reviews = set(evidence.get("completed_reviews", []))
+    completed_reviews = set(completed)
     missing_reviews = sorted(set(policy["required_reviews"]) - completed_reviews)
     if breaches:
         return "corrective-action", breaches
-    if int(evidence.get("days_observed", 0)) < policy["minimum_observation_days"]:
+    if days_observed < policy["minimum_observation_days"]:
         return "continue-observation", ["minimum_observation_period_incomplete"]
     if missing_reviews:
         return "review-required", [f"missing_review:{name}" for name in missing_reviews]

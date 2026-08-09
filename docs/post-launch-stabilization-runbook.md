@@ -10,6 +10,8 @@ Registrar por release SHA: disponibilidad, tasa de error, p95, incidentes SEV-1/
 
 El archivo de evaluación incluye `days_observed`, `availability`, `error_rate`, `p95_ms`, `sev1_incidents`, `sev2_incidents`, `open_critical_defects` y `completed_reviews`.
 
+La evaluación rechaza campos ausentes, `NaN`, infinitos, valores negativos, tasas fuera de `0..1`, contadores no enteros y listas de revisiones mal formadas. Evidencia inválida nunca puede producir el estado `stabilized`.
+
 ```bash
 python3 scripts/evaluate_stabilization.py \
   --evidence /secure/stabilization.json --release-sha abc1234 \

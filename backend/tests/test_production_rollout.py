@@ -1,5 +1,8 @@
 import importlib.util
+import math
 from pathlib import Path
+
+import pytest
 
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "evaluate_production_rollout.py"
@@ -52,3 +55,16 @@ def test_healthy_full_rollout_completes():
         100,
     )
     assert (action, next_stage) == ("complete", 100)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("error_rate", math.nan), ("p95_ms", -1), ("health_success_rate", 1.1),
+     ("observation_minutes", True)],
+)
+def test_invalid_metrics_never_promote(field, value):
+    metrics = {"error_rate": 0.0, "p95_ms": 100, "p99_ms": 200,
+               "health_success_rate": 1.0, "observation_minutes": 15}
+    metrics[field] = value
+    with pytest.raises(ValueError, match=field):
+        MODULE.evaluate(POLICY, metrics, 5)
