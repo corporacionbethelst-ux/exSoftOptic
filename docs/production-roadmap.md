@@ -33,6 +33,18 @@ make readiness
 
 `readiness-fast` valida sintaxis, contrato API, seguridad declarativa, migraciones, RBAC y el frontend sin requerir servicios. `readiness` añade Docker Compose, preflight, pruebas backend y roundtrip de migraciones. La segunda orden requiere Docker, dependencias Python y servicios de prueba disponibles.
 
+## Programa de cierre después de la fase 15
+
+No existe una fase 16: el siguiente ciclo consiste en cerrar con evidencia los criterios pendientes de las 15 fases. Cada fase tiene responsable y siguiente acción versionados en `ops/release/production-closure-plan.json`. El backlog consolidado se genera con:
+
+```bash
+make production-closure-report
+```
+
+El reporte no convierte trabajo implementado en evidencia operativa. Una fase solo aparece `closed` cuando no conserva ninguna casilla pendiente en este documento; `--strict` devuelve código no cero mientras exista cualquier criterio sin cerrar.
+
+CI valida que existan exactamente las 15 fases, publica el resumen por responsable y conserva el reporte JSON durante 30 días. El job informativo no usa `--strict`, porque bloquear todos los cambios mientras haya trabajo operativo pendiente impediría completar ese mismo trabajo; `--strict` se reserva para la decisión final de salida.
+
 ## Cierre de la fase 1
 
 - [ ] `make readiness` finaliza sin errores en una máquina limpia.

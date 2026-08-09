@@ -1,4 +1,4 @@
-.PHONY: help readiness readiness-fast frontend-check browser-e2e diagnostics staging-release-plan rollout-evaluate stabilization-evaluate compose-check compose-production-check env-production-init config-production-audit
+.PHONY: help readiness readiness-fast frontend-check browser-e2e diagnostics staging-release-plan rollout-evaluate stabilization-evaluate production-closure-report compose-check compose-production-check env-production-init config-production-audit
 
 help: ## Mostrar comandos de verificacion del proyecto
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'
@@ -28,6 +28,9 @@ rollout-evaluate: ## Evaluar métricas canary: make rollout-evaluate metrics=x.j
 
 stabilization-evaluate: ## Evaluar estabilización: make stabilization-evaluate evidence=x.json sha=abc1234 owner=x ticket=PIR-1
 	python3 scripts/evaluate_stabilization.py --evidence "$(evidence)" --release-sha "$(sha)" --owner "$(owner)" --review-ticket "$(ticket)"
+
+production-closure-report: ## Generar backlog consolidado de cierre de las 15 fases
+	python3 scripts/audit_production_closure.py
 
 compose-check: ## Validar la configuracion Docker Compose renderizada
 	docker compose config --quiet
