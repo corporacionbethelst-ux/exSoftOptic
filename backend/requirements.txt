@@ -16,7 +16,7 @@ motor==3.7.1
 pymongo==4.17.0
 
 # Redis
-redis==5.2.1
+redis==8.1.0
 
 # Authentication
 python-jose[cryptography]==3.5.0
