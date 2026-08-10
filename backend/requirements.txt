@@ -7,7 +7,7 @@ python-multipart==0.0.32
 sqlalchemy[asyncio]==2.0.51
 asyncpg==0.30.0; python_version < "3.14"
 asyncpg @ git+https://github.com/MagicStack/asyncpg.git@master; python_version >= "3.14"
-alembic==1.18.5
+alembic==1.19.0
 psycopg2-binary==2.9.10; python_version < "3.14"
 psycopg @ git+https://github.com/psycopg/psycopg.git; python_version >= "3.14"
 
@@ -28,7 +28,7 @@ bcrypt==5.0.0
 pydantic==2.13.4
 pydantic-core @ git+https://github.com/pydantic/pydantic-core.git@main; python_version >= "3.14"
 pydantic-core==2.27.1; python_version < "3.14"
-pydantic-settings==2.14.2
+pydantic-settings==2.15.0
 email-validator==2.3.0
 
 # Background Tasks
@@ -55,7 +55,7 @@ pandas==2.2.3
 pytest>=8.3.4
 pytest-asyncio==0.25.0
 pytest-cov==7.1.0
-factory-boy==3.3.1
+factory-boy==3.3.3
 
 # Development
 black==24.10.0
