@@ -27,6 +27,11 @@ export const patientsService = {
   clients: (params?: ListParams) => apiRequest<Cliente[]>(`/api/v1/crm/clientes?${buildQuery(params)}`),
   createClient: (payload: ClientePayload) => apiRequest<Cliente>('/api/v1/crm/clientes', { method: 'POST', body: JSON.stringify(payload) }),
   patients: (params?: ListParams) => apiRequest<Paciente[]>(`/api/v1/crm/pacientes?${buildQuery(params)}`),
+  patientsByIds: async (ids: string[]) => {
+    const unique = [...new Set(ids)].slice(0, 40);
+    const results = await Promise.all(unique.map((id) => apiRequest<Paciente>(`/api/v1/crm/pacientes/${id}`).catch(() => null)));
+    return results.filter((patient): patient is Paciente => patient !== null);
+  },
   createPatient: (payload: PacientePayload) => apiRequest<Paciente>('/api/v1/crm/pacientes', { method: 'POST', body: JSON.stringify(payload) }),
   prescriptions: (params?: ListParams) => apiRequest<RecetaOptica[]>(`/api/v1/crm/recetas?${buildQuery(params)}`),
   createPrescription: (payload: RecetaOpticaPayload) => apiRequest<RecetaOptica>('/api/v1/crm/recetas', { method: 'POST', body: JSON.stringify(payload) }),
