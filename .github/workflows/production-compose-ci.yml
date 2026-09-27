@@ -44,7 +44,7 @@ jobs:
       BANKING_API_URL: https://bank.example.com
       BANKING_API_KEY: ci-bank-key
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Render production Compose configuration
         run: docker compose -f docker-compose.production.yml config --quiet
       - name: Build production application images
