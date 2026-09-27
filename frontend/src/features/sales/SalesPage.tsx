@@ -7,11 +7,14 @@ import { Pagination } from '../../components/Pagination';
 import { SectionPanel } from '../../components/SectionPanel';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../auth/authContext';
-import { catalogService, salesService } from '../../services';
+import { catalogService, patientsService, salesService } from '../../services';
 import type { Producto } from '../../types/catalog';
+import type { Cliente, Paciente } from '../../types/patients';
 import type { Venta, VentaConfirmarPayload, VentaLineaPayload, VentaPayload } from '../../types/sales';
 import { money } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
+import { buildPrescriptionPayload, EMPTY_PRESCRIPTION, hasPrescriptionData, validatePrescription, type PrescriptionValues } from './prescription';
+import { PrescriptionForm } from './PrescriptionForm';
 
 const DEFAULT_CONFIRM: VentaConfirmarPayload = {
   cuenta_cobro: '102.01',
@@ -19,6 +22,8 @@ const DEFAULT_CONFIRM: VentaConfirmarPayload = {
   cuenta_costo_ventas: '501.01',
   cuenta_inventario: '115.01',
 };
+
+type PatientMode = 'walkin' | 'existing' | 'new';
 
 function emptyLine(products: Producto[]): VentaLineaPayload {
   const product = products[0];
@@ -37,8 +42,11 @@ export function SalesPage() {
   const [pageSize, setPageSize] = useState(20);
   const [sucursalId, setSucursalId] = useState(user?.sucursal_id ?? '');
   const [folio, setFolio] = useState(() => `VTA-${Date.now()}`);
-  const [clienteNombre, setClienteNombre] = useState('Cliente mostrador');
-  const [clienteEmail, setClienteEmail] = useState('cliente.demo@example.com');
+  const [patientMode, setPatientMode] = useState<PatientMode>('walkin');
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedPatientId, setSelectedPatientId] = useState('');
+  const [newPatient, setNewPatient] = useState({ nombre: '', fecha_nacimiento: '', telefono: '' });
+  const [prescription, setPrescription] = useState<PrescriptionValues>(EMPTY_PRESCRIPTION);
   const [metodoPago, setMetodoPago] = useState('EFECTIVO');
   const [referenciaPago, setReferenciaPago] = useState('');
   const [lineas, setLineas] = useState<VentaLineaPayload[]>([]);
@@ -54,13 +62,32 @@ export function SalesPage() {
 
   const loadSales = useCallback(() => salesService.list({ skip, limit: pageSize }), [pageSize, skip]);
   const loadProducts = useCallback(() => catalogService.products({ limit: 100 }), []);
+  const loadClients = useCallback(() => patientsService.clients({ limit: 100 }), []);
   const sales = useApiResource(loadSales);
   const products = useApiResource(loadProducts);
+  const clients = useApiResource(loadClients, patientMode !== 'walkin');
   const salesItems = sales.data ?? [];
   const productItems = products.data?.items ?? products.data?.productos ?? [];
+  const clientItems: Cliente[] = clients.data ?? [];
+  const [clientPatients, setClientPatients] = useState<Paciente[]>([]);
   const subtotal = useMemo(() => lineas.reduce((total, line) => total + line.cantidad * line.precio_unitario - line.descuento, 0), [lineas]);
   const impuestos = useMemo(() => Number((subtotal * 0.16).toFixed(2)), [subtotal]);
   const total = useMemo(() => Number((subtotal + impuestos).toFixed(2)), [subtotal, impuestos]);
+  const showPrescription = patientMode === 'existing' || patientMode === 'new';
+
+  async function handleClientChange(clientId: string) {
+    setSelectedClientId(clientId);
+    setSelectedPatientId('');
+    setClientPatients([]);
+    if (!clientId) return;
+    try {
+      const list = await patientsService.patients({ cliente_id: clientId, limit: 100 });
+      setClientPatients(list);
+      if (list.length === 1) setSelectedPatientId(list[0].id);
+    } catch {
+      setClientPatients([]);
+    }
+  }
 
   function addLine() {
     setLineas((current) => [...current, emptyLine(productItems)]);
@@ -79,25 +106,99 @@ export function SalesPage() {
     });
   }
 
+  function validateClinical(): string | null {
+    if (patientMode === 'existing') {
+      if (!selectedClientId) return 'Selecciona un cliente para la venta con paciente.';
+      if (!selectedPatientId) return 'Selecciona el paciente que recibirá la atención óptica.';
+      if (hasPrescriptionData(prescription)) {
+        const prescriptionError = validatePrescription(prescription);
+        if (prescriptionError) return prescriptionError;
+      }
+    }
+    if (patientMode === 'new') {
+      if (!selectedClientId) return 'Selecciona el cliente (titular) del nuevo paciente.';
+      if (!newPatient.nombre.trim()) return 'Captura el nombre del nuevo paciente.';
+      const prescriptionError = validatePrescription(prescription);
+      if (prescriptionError) return prescriptionError;
+    }
+    return null;
+  }
+
+  function resetClinicalBlock() {
+    setPatientMode('walkin');
+    setSelectedClientId('');
+    setSelectedPatientId('');
+    setClientPatients([]);
+    setNewPatient({ nombre: '', fecha_nacimiento: '', telefono: '' });
+    setPrescription(EMPTY_PRESCRIPTION);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSaving(true);
     setFormError(null);
     setOperationMessage(null);
+    const clinicalError = validateClinical();
+    if (clinicalError) {
+      setFormError(clinicalError);
+      return;
+    }
+    setSaving(true);
     try {
-      const payload: VentaPayload = {
-        sucursal_id: sucursalId,
-        cliente: { nombre: clienteNombre, email: clienteEmail || null },
-        folio,
-        impuestos,
-        lineas,
-        pagos: total > 0 ? [{ metodo_pago: metodoPago, monto: total, referencia: referenciaPago || null }] : [],
-      };
+      let payload: VentaPayload;
+      if (patientMode === 'existing') {
+        payload = {
+          sucursal_id: sucursalId,
+          cliente_id: selectedClientId,
+          paciente_id: selectedPatientId,
+          receta_id: null,
+          folio,
+          impuestos,
+          lineas,
+          pagos: total > 0 ? [{ metodo_pago: metodoPago, monto: total, referencia: referenciaPago || null }] : [],
+        };
+        if (hasPrescriptionData(prescription)) {
+          const created = await patientsService.createPrescription({
+            paciente_id: selectedPatientId,
+            ...buildPrescriptionPayload(prescription),
+          });
+          payload.receta_id = created.id;
+        }
+      } else if (patientMode === 'new') {
+        payload = {
+          sucursal_id: sucursalId,
+          cliente_id: selectedClientId,
+          paciente: {
+            nombre: newPatient.nombre.trim(),
+            fecha_nacimiento: newPatient.fecha_nacimiento || null,
+            telefono: newPatient.telefono.trim() || null,
+          },
+          receta: buildPrescriptionPayload(prescription),
+          folio,
+          impuestos,
+          lineas,
+          pagos: total > 0 ? [{ metodo_pago: metodoPago, monto: total, referencia: referenciaPago || null }] : [],
+        };
+      } else {
+        payload = {
+          sucursal_id: sucursalId,
+          cliente: { nombre: 'Cliente mostrador' },
+          folio,
+          impuestos,
+          lineas,
+          pagos: total > 0 ? [{ metodo_pago: metodoPago, monto: total, referencia: referenciaPago || null }] : [],
+        };
+      }
       await salesService.create(payload);
-      setOperationMessage('Venta creada correctamente. Ahora puedes confirmarla desde el listado.');
+      setOperationMessage(
+        patientMode === 'walkin'
+          ? 'Venta creada correctamente. Ahora puedes confirmarla desde el listado.'
+          : 'Venta creada con expediente clínico (paciente y receta) vinculado al ticket.',
+      );
       setFolio(`VTA-${Date.now()}`);
       setLineas([]);
+      resetClinicalBlock();
       await sales.reload();
+      if (patientMode !== 'walkin') await clients.reload();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'No se pudo crear la venta');
     } finally {
@@ -148,19 +249,22 @@ export function SalesPage() {
       <PageHeader
         eyebrow="Operación"
         title="Ventas"
-        description="Fase operativa de ventas: crear borradores, agregar líneas, registrar pago, confirmar venta y preparar devoluciones."
+        description="Punto de venta con expediente clínico: crear borradores vinculados a paciente/receta, confirmar venta y registrar devoluciones."
       />
 
       <SectionPanel title="Listado de ventas" footer={<span className="muted compact">{salesItems.length} en esta página</span>}>
         <InlineState loading={sales.loading} error={sales.error} empty={salesItems.length === 0} emptyTitle="Sin ventas" emptyDescription="Crea una venta o ejecuta make seed-demo.">
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Folio</th><th>Estado</th><th>Líneas</th><th>Subtotal</th><th>Impuestos</th><th>Total</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Folio</th><th>Estado</th><th>Paciente / Receta</th><th>Líneas</th><th>Subtotal</th><th>Impuestos</th><th>Total</th><th>Acciones</th></tr></thead>
               <tbody>
                 {salesItems.map((sale) => (
                   <tr key={sale.id}>
                     <td>{sale.folio}</td>
                     <td><StatusBadge tone={sale.estado === 'CONFIRMADA' ? 'success' : 'warning'}>{sale.estado}</StatusBadge></td>
+                    <td className="compact">
+                      {sale.paciente_id ? `Paciente ✓${sale.receta_id ? ' · Receta ✓' : ' · sin receta'}` : 'Mostrador'}
+                    </td>
                     <td>{sale.lineas?.length ?? 0}</td>
                     <td>{money(sale.subtotal)}</td>
                     <td>{money(sale.impuestos)}</td>
@@ -187,15 +291,62 @@ export function SalesPage() {
         </InlineState>
       </SectionPanel>
 
-      <SectionPanel title="Nueva venta" description="Captura rápida para venta de mostrador usando cliente inline y productos del catálogo.">
+      <SectionPanel title="Nueva venta" description="Punto de venta con expediente clínico: vincula paciente y receta óptica, o usa venta rápida de mostrador.">
         {operationMessage ? <div className="alert success wide-field">{operationMessage}</div> : null}
         <form className="crud-form" onSubmit={(event) => void handleSubmit(event)}>
+          <div className="wide-field patient-mode">
+            <label className="check-field"><input type="radio" name="patientMode" checked={patientMode === 'walkin'} onChange={() => setPatientMode('walkin')} /> Venta de mostrador (sin paciente)</label>
+            <label className="check-field"><input type="radio" name="patientMode" checked={patientMode === 'existing'} onChange={() => setPatientMode('existing')} /> Paciente existente</label>
+            <label className="check-field"><input type="radio" name="patientMode" checked={patientMode === 'new'} onChange={() => setPatientMode('new')} /> Nuevo paciente + receta</label>
+          </div>
+
+          {patientMode !== 'walkin' ? (
+            <>
+              <label>Cliente titular
+                <select value={selectedClientId} onChange={(event) => void handleClientChange(event.target.value)} required>
+                  <option value="">{clients.loading ? 'Cargando clientes…' : 'Selecciona un cliente'}</option>
+                  {clientItems.map((client) => <option key={client.id} value={client.id}>{client.nombre}{client.telefono ? ` · ${client.telefono}` : ''}</option>)}
+                </select>
+              </label>
+              {clients.error ? <div className="alert error wide-field">No se pudieron cargar los clientes: {clients.error}</div> : null}
+            </>
+          ) : null}
+
+          {patientMode === 'existing' ? (
+            <label>Paciente
+              <select value={selectedPatientId} onChange={(event) => setSelectedPatientId(event.target.value)} required disabled={!selectedClientId}>
+                <option value="">{selectedClientId ? (clientPatients.length ? 'Selecciona un paciente' : 'Este cliente aún no tiene pacientes registrados') : 'Selecciona primero un cliente'}</option>
+                {clientPatients.map((patient) => <option key={patient.id} value={patient.id}>{patient.nombre}{patient.fecha_nacimiento ? ` · nac. ${patient.fecha_nacimiento}` : ''}</option>)}
+              </select>
+            </label>
+          ) : null}
+
+          {patientMode === 'new' ? (
+            <>
+              <label>Nombre del paciente
+                <input value={newPatient.nombre} onChange={(event) => setNewPatient((current) => ({ ...current, nombre: event.target.value }))} placeholder="Nombre completo" required />
+              </label>
+              <label>Fecha nacimiento
+                <input type="date" max={new Date().toISOString().slice(0, 10)} value={newPatient.fecha_nacimiento} onChange={(event) => setNewPatient((current) => ({ ...current, fecha_nacimiento: event.target.value }))} />
+              </label>
+              <label>Teléfono paciente
+                <input value={newPatient.telefono} onChange={(event) => setNewPatient((current) => ({ ...current, telefono: event.target.value }))} placeholder="Opcional" />
+              </label>
+            </>
+          ) : null}
+
+          {showPrescription ? (
+            <PrescriptionForm values={prescription} onChange={(patch) => setPrescription((current) => ({ ...current, ...patch }))} />
+          ) : null}
+
           <label>Folio<input value={folio} onChange={(event) => setFolio(event.target.value)} required /></label>
           <label>Sucursal ID<input value={sucursalId} onChange={(event) => setSucursalId(event.target.value)} required /></label>
-          <label>Cliente<input value={clienteNombre} onChange={(event) => setClienteNombre(event.target.value)} required /></label>
-          <label>Email cliente<input type="email" value={clienteEmail} onChange={(event) => setClienteEmail(event.target.value)} /></label>
-          <label>Método pago<input value={metodoPago} onChange={(event) => setMetodoPago(event.target.value)} required /></label>
-          <label>Referencia pago<input value={referenciaPago} onChange={(event) => setReferenciaPago(event.target.value)} /></label>
+          <label>Método pago
+            <select value={metodoPago} onChange={(event) => setMetodoPago(event.target.value)} required>
+              {['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'MIXTO'].map((method) => <option key={method} value={method}>{method}</option>)}
+            </select>
+          </label>
+          <label>Referencia pago<input value={referenciaPago} onChange={(event) => setReferenciaPago(event.target.value)} placeholder="Opcional para efectivo" /></label>
 
           <div className="wide-field line-editor">
             <div className="split"><strong>Líneas</strong><button className="secondary-button" type="button" onClick={addLine}>Agregar línea</button></div>

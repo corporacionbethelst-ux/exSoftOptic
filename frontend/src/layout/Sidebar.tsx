@@ -1,13 +1,19 @@
-import type { NavigationItem, PageKey } from '../types/navigation';
+import { NavLink } from 'react-router-dom';
+import type { NavigationItem } from '../types/navigation';
 
 type SidebarProps = {
-  activePage: PageKey;
+  activePath: string;
   items: NavigationItem[];
   open: boolean;
-  onSelect: (page: PageKey) => void;
+  onNavigate: () => void;
 };
 
-export function Sidebar({ activePage, items, open, onSelect }: SidebarProps) {
+function isActivePath(activePath: string, key: string) {
+  if (key === 'dashboard') return activePath === '/' || activePath === '/dashboard';
+  return activePath === `/${key}` || activePath.startsWith(`/${key}/`);
+}
+
+export function Sidebar({ activePath, items, open, onNavigate }: SidebarProps) {
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="sidebar-brand">
@@ -16,9 +22,14 @@ export function Sidebar({ activePage, items, open, onSelect }: SidebarProps) {
       </div>
       <nav>
         {items.map((item) => (
-          <button key={item.key} className={activePage === item.key ? 'active' : ''} onClick={() => onSelect(item.key)}>
+          <NavLink
+            key={item.key}
+            to={item.key === 'dashboard' ? '/' : `/${item.key}`}
+            className={isActivePath(activePath, item.key) ? 'active' : ''}
+            onClick={onNavigate}
+          >
             {item.icon}{item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
     </aside>

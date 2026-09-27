@@ -1,9 +1,1 @@
-# Dependencies
 node_modules/
-
-# Build Outputs
-dist/
-
-# Python Cache
-__pycache__/
-*.pyc
