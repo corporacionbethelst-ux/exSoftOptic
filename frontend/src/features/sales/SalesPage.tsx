@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
@@ -260,7 +261,7 @@ export function SalesPage() {
               <tbody>
                 {salesItems.map((sale) => (
                   <tr key={sale.id}>
-                    <td>{sale.folio}</td>
+                    <td><Link to={`/sales/${sale.id}`} className="row-link">{sale.folio}</Link></td>
                     <td><StatusBadge tone={sale.estado === 'CONFIRMADA' ? 'success' : 'warning'}>{sale.estado}</StatusBadge></td>
                     <td className="compact">
                       {sale.paciente_id ? `Paciente ✓${sale.receta_id ? ' · Receta ✓' : ' · sin receta'}` : 'Mostrador'}

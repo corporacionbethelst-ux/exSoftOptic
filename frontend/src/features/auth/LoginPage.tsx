@@ -1,11 +1,13 @@
 import { FormEvent, useState } from 'react';
 import { Glasses } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../../services';
 import { env } from '../../config/env';
 import { useAuth } from './authContext';
 
 export function LoginPage() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [username, setUsername] = useState(env.demoUsername);
   const [password, setPassword] = useState(env.demoPassword);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +19,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo iniciar sesión');
     } finally {

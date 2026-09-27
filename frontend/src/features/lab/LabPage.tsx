@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { FlaskConical } from 'lucide-react';
@@ -110,7 +111,7 @@ export function LabPage() {
               <table><thead><tr><th>Folio</th><th>Prioridad</th><th>Prometida</th><th>Progreso</th><th>Estado</th></tr></thead><tbody>{orderItems.map((order) => {
                 const done = order.etapas?.filter((stage) => stage.estado === 'COMPLETADA').length ?? 0;
                 const total = order.etapas?.length ?? 0;
-                return <tr key={order.id} className={order.id === selectedOrder?.id ? 'selected-row' : undefined} onClick={() => setSelectedOrderId(order.id)}><td><strong>{order.folio}</strong><br /><span className="compact-id">{order.id}</span></td><td>{order.prioridad}</td><td>{dateTime(order.fecha_prometida)}</td><td>{done}/{total}</td><td><StatusBadge tone={tone(order.estado)}>{order.estado}</StatusBadge></td></tr>;
+                return <tr key={order.id} className={order.id === selectedOrder?.id ? 'selected-row' : undefined} onClick={() => setSelectedOrderId(order.id)}><td><strong><Link to={`/lab/${order.id}`} className="row-link">{order.folio}</Link></strong><br /><span className="compact-id">{order.id}</span></td><td>{order.prioridad}</td><td>{dateTime(order.fecha_prometida)}</td><td>{done}/{total}</td><td><StatusBadge tone={tone(order.estado)}>{order.estado}</StatusBadge></td></tr>;
               })}</tbody></table>
             </div>
           </InlineState>

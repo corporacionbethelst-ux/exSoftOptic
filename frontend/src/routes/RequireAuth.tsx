@@ -1,12 +1,11 @@
+import { Navigate } from 'react-router-dom';
 import { AppBootScreen } from '../components/AppBootScreen';
-import { LoginPage } from '../features/auth/LoginPage';
 import { useAuth } from '../features/auth/authContext';
 import { AppLayout } from '../layout/AppLayout';
 
-export function App() {
+export function RequireAuth() {
   const { isAuthenticated, isBootstrapping } = useAuth();
-
   if (isBootstrapping) return <AppBootScreen />;
-
-  return isAuthenticated ? <AppLayout /> : <LoginPage />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <AppLayout />;
 }

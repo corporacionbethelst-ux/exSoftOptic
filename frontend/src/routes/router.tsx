@@ -1,5 +1,6 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { AppLayout } from '../layout/AppLayout';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { LoginPage } from '../features/auth/LoginPage';
+import { RequireAuth } from './RequireAuth';
 import { AdminPage } from '../features/admin/AdminPage';
 import { BillingPage } from '../features/billing/BillingPage';
 import { CrmPage } from '../features/crm/CrmPage';
@@ -20,8 +21,12 @@ import { UsersPage } from '../features/users/UsersPage';
 
 export const router = createBrowserRouter([
   {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
     path: '/',
-    element: <AppLayout />,
+    element: <RequireAuth />,
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'dashboard', element: <DashboardPage /> },

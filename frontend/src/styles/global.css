@@ -201,3 +201,12 @@ th { color: #475569; font-size: .82rem; text-transform: uppercase; letter-spacin
 .prescription-form .optical-grid label { display: grid; gap: .35rem; font-size: .82rem; font-weight: 700; color: #134e4a; }
 .prescription-notes { grid-column: 1 / -1; }
 @media (max-width: 920px) { .patient-mode { flex-direction: column; gap: .5rem; } }
+
+.row-link {
+  color: var(--primary, #0e7490);
+  font-weight: 600;
+  text-decoration: none;
+}
+.row-link:hover {
+  text-decoration: underline;
+}

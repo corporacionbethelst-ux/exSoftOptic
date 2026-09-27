@@ -9,14 +9,6 @@ import { useApiResource } from '../../hooks/useApiResource';
 import type { RecetaOptica } from '../../types/patients';
 import { dateTime, number } from '../../utils/format';
 
-const OD_FIELDS: Array<[keyof RecetaOptica, string]> = [
-  ['od_esfera', 'Esfera'],
-  ['od_cilindro', 'Cilindro'],
-  ['od_eje', 'Eje'],
-  ['od_adicion', 'Adición'],
-];
-const OI_FIELDS = OD_FIELDS;
-
 function prescriptionRow(title: string, esfera: keyof RecetaOptica, cilindro: keyof RecetaOptica, eje: keyof RecetaOptica, adicion: keyof RecetaOptica) {
   return { title, keys: { esfera, cilindro, eje, adicion } };
 }
