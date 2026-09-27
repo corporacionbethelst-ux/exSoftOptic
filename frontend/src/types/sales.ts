@@ -1,4 +1,4 @@
-import type { DateTimeString, ID, MoneyValue } from './common';
+import type { DateString, DateTimeString, ID, MoneyValue } from './common';
 
 export type VentaLinea = {
   id: ID;
@@ -45,8 +45,33 @@ export type VentaLineaPayload = {
   descuento: number;
 };
 
+/** Datos clínicos para crear un paciente inline junto a la venta (backend: PacienteCreate). */
+export type VentaPacienteInline = {
+  nombre: string;
+  fecha_nacimiento?: DateString | null;
+  telefono?: string | null;
+  email?: string | null;
+};
+
+/** Receta óptica capturada inline en la venta (backend: RecetaOpticaCreate sin paciente_id). */
+export type VentaRecetaInline = {
+  fecha: DateString;
+  od_esfera?: number | null;
+  od_cilindro?: number | null;
+  od_eje?: number | null;
+  od_adicion?: number | null;
+  oi_esfera?: number | null;
+  oi_cilindro?: number | null;
+  oi_eje?: number | null;
+  oi_adicion?: number | null;
+  dnp?: number | null;
+  altura?: number | null;
+  observaciones?: string | null;
+};
+
 export type VentaPayload = {
   sucursal_id: ID;
+  cliente_id?: ID | null;
   cliente?: {
     nombre: string;
     email?: string | null;
@@ -55,6 +80,10 @@ export type VentaPayload = {
     codigo_postal?: string | null;
     regimen_fiscal?: string | null;
   };
+  paciente_id?: ID | null;
+  paciente?: VentaPacienteInline | null;
+  receta_id?: ID | null;
+  receta?: VentaRecetaInline | null;
   folio: string;
   impuestos: number;
   lineas: VentaLineaPayload[];

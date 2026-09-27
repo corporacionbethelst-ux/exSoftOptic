@@ -194,3 +194,10 @@ th { color: #475569; font-size: .82rem; text-transform: uppercase; letter-spacin
     grid-template-columns: 1fr;
   }
 }
+
+/* Fase A — Punto de venta con expediente clínico */
+.patient-mode { display: flex; gap: 1.25rem; flex-wrap: wrap; padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 16px; background: #f8fafc; }
+.prescription-form { display: grid; gap: .75rem; padding: 1rem; border: 1px dashed rgba(14, 116, 144, 0.45); border-radius: 18px; background: #f0fdfa; }
+.prescription-form .optical-grid label { display: grid; gap: .35rem; font-size: .82rem; font-weight: 700; color: #134e4a; }
+.prescription-notes { grid-column: 1 / -1; }
+@media (max-width: 920px) { .patient-mode { flex-direction: column; gap: .5rem; } }
