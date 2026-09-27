@@ -1,6 +1,9 @@
-# Python compiled files
+# Dependencies
+node_modules/
+
+# Build Outputs
+dist/
+
+# Python Cache
 __pycache__/
 *.pyc
-
-# Artifacts
-artifacts/
