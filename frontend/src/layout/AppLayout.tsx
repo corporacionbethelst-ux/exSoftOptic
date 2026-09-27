@@ -1,27 +1,23 @@
 import { useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { navigationItems } from '../routes/navigation';
-import { renderPage } from '../routes/renderPage';
-import type { PageKey } from '../types/navigation';
 import { useAuth } from '../features/auth/authContext';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
 export function AppLayout() {
   const { user, logout } = useAuth();
-  const [activePage, setActivePage] = useState<PageKey>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  function selectPage(page: PageKey) {
-    setActivePage(page);
-    setSidebarOpen(false);
-  }
+  const { pathname } = useLocation();
 
   return (
     <div className="app-shell">
-      <Sidebar activePage={activePage} items={navigationItems} open={sidebarOpen} onSelect={selectPage} />
+      <Sidebar activePath={pathname} items={navigationItems} open={sidebarOpen} onNavigate={() => setSidebarOpen(false)} />
       <div className="content-shell">
         <Topbar user={user} onMenuClick={() => setSidebarOpen((value) => !value)} onLogout={logout} />
-        <main className="main-content">{renderPage(activePage)}</main>
+        <main className="main-content">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

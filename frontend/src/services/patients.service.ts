@@ -21,6 +21,9 @@ function buildQuery(params: ListParams = {}) {
 }
 
 export const patientsService = {
+  client: (id: ID) => apiRequest<Cliente>(`/api/v1/crm/clientes/${id}`),
+  patient: (id: ID) => apiRequest<Paciente>(`/api/v1/crm/pacientes/${id}`),
+  prescription: (id: ID) => apiRequest<RecetaOptica>(`/api/v1/crm/recetas/${id}`),
   clients: (params?: ListParams) => apiRequest<Cliente[]>(`/api/v1/crm/clientes?${buildQuery(params)}`),
   createClient: (payload: ClientePayload) => apiRequest<Cliente>('/api/v1/crm/clientes', { method: 'POST', body: JSON.stringify(payload) }),
   patients: (params?: ListParams) => apiRequest<Paciente[]>(`/api/v1/crm/pacientes?${buildQuery(params)}`),

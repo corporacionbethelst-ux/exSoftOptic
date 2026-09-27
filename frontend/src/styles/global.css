@@ -48,8 +48,8 @@ input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(15,118,11
 .sidebar-brand { display: flex; align-items: center; gap: .85rem; }
 .sidebar-brand span, .topbar span { display: block; color: #94a3b8; font-size: .85rem; }
 .sidebar nav { display: grid; gap: .45rem; }
-.sidebar nav button { border: 0; display: flex; align-items: center; gap: .75rem; padding: .85rem 1rem; border-radius: 14px; background: transparent; color: #cbd5e1; text-align: left; }
-.sidebar nav button:hover, .sidebar nav button.active { background: rgba(45,212,191,.14); color: white; }
+.sidebar nav a { border: 0; display: flex; align-items: center; gap: .75rem; padding: .85rem 1rem; border-radius: 14px; background: transparent; color: #cbd5e1; text-align: left; text-decoration: none; font: inherit; cursor: pointer; }
+.sidebar nav a:hover, .sidebar nav a.active { background: rgba(45,212,191,.14); color: white; }
 .content-shell { min-width: 0; display: flex; flex-direction: column; }
 .topbar { height: 72px; background: rgba(255,255,255,.92); border-bottom: 1px solid var(--border); padding: 0 1.4rem; display: flex; align-items: center; justify-content: flex-end; gap: 1rem; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(14px); }
 .main-content { padding: 1.5rem; }
