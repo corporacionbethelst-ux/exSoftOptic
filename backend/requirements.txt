@@ -1,22 +1,22 @@
 # Web Framework
 fastapi==0.141.1
-uvicorn[standard]==0.52.1
+uvicorn[standard]==0.53.0
 python-multipart==0.0.32
 
 # Database
-sqlalchemy[asyncio]==2.0.51
+sqlalchemy[asyncio]==2.0.54
 asyncpg==0.30.0; python_version < "3.14"
 asyncpg @ git+https://github.com/MagicStack/asyncpg.git@master; python_version >= "3.14"
-alembic==1.18.5
+alembic==1.20.0
 psycopg2-binary==2.9.10; python_version < "3.14"
 psycopg @ git+https://github.com/psycopg/psycopg.git; python_version >= "3.14"
 
 # MongoDB
 motor==3.7.1
-pymongo==4.17.0
+pymongo==4.18.1
 
 # Redis
-redis==5.2.1
+redis==8.1.0
 
 # Authentication
 python-jose[cryptography]==3.5.0
@@ -25,10 +25,10 @@ bcrypt==5.0.0
 #bcrypt==4.0.1
 
 # Validation
-pydantic==2.13.4
+pydantic==2.13.5
 pydantic-core @ git+https://github.com/pydantic/pydantic-core.git@main; python_version >= "3.14"
 pydantic-core==2.27.1; python_version < "3.14"
-pydantic-settings==2.14.2
+pydantic-settings==2.15.0
 email-validator==2.3.0
 
 # Background Tasks
@@ -38,14 +38,14 @@ celery==5.6.3
 httpx==0.28.1
 
 # Utilities
-python-dotenv==1.2.2
+python-dotenv==1.2.3
 structlog==26.1.0
 loguru==0.7.3
 python-dateutil==2.9.0.post0
 
 # PDF Generation
 reportlab==4.3.0
-weasyprint==64.0
+weasyprint==69.0
 
 # Excel
 openpyxl==3.1.5
@@ -55,7 +55,7 @@ pandas==2.2.3
 pytest>=8.3.4
 pytest-asyncio==1.4.0
 pytest-cov==7.1.0
-factory-boy==3.3.1
+factory-boy==3.3.3
 
 # Development
 black==24.10.0
