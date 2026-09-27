@@ -8,6 +8,7 @@ import { Pagination } from '../../components/Pagination';
 import { SectionPanel } from '../../components/SectionPanel';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAuth } from '../auth/authContext';
+import { hasPermission } from '../../lib/permissions';
 import { catalogService, patientsService, salesService } from '../../services';
 import type { Producto } from '../../types/catalog';
 import type { Cliente, Paciente } from '../../types/patients';
@@ -271,8 +272,8 @@ export function SalesPage() {
                     <td>{money(sale.impuestos)}</td>
                     <td>{money(sale.total)}</td>
                     <td className="action-cell">
-                      <button className="secondary-button" disabled={sale.estado === 'CONFIRMADA'} onClick={() => setPendingConfirm(sale)}>Confirmar</button>
-                      <button className="secondary-button" disabled={sale.estado !== 'CONFIRMADA'} onClick={() => setPendingReturn(sale)}>Devolver</button>
+                      {hasPermission(user, 'ventas.confirmar') ? <button className="secondary-button" disabled={sale.estado === 'CONFIRMADA'} onClick={() => setPendingConfirm(sale)}>Confirmar</button> : null}
+                      {hasPermission(user, 'ventas.devolver') ? <button className="secondary-button" disabled={sale.estado !== 'CONFIRMADA'} onClick={() => setPendingReturn(sale)}>Devolver</button> : null}
                     </td>
                   </tr>
                 ))}

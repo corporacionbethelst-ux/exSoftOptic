@@ -12,6 +12,7 @@ import type { OrdenCompra, OrdenCompraLineaPayload, OrdenCompraPayload, Recepcio
 import { money } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
 import { useAuth } from '../auth/authContext';
+import { hasPermission } from '../../lib/permissions';
 
 const DEFAULT_RECEIPT_ACCOUNTS = {
   cuenta_inventario: '115.01',
@@ -197,8 +198,8 @@ export function PurchasesPage() {
                     <td>{money(order.impuestos)}</td>
                     <td>{money(order.total)}</td>
                     <td className="action-cell">
-                      <button className="secondary-button" disabled={order.estado !== 'BORRADOR'} onClick={() => setPendingApproval(order)}>Aprobar</button>
-                      <button className="secondary-button" disabled={!['APROBADA', 'PARCIAL'].includes(order.estado)} onClick={() => setPendingReceipt(order)}>Recibir</button>
+                      {hasPermission(user, 'compras.aprobar') ? <button className="secondary-button" disabled={order.estado !== 'BORRADOR'} onClick={() => setPendingApproval(order)}>Aprobar</button> : null}
+                      {hasPermission(user, 'compras.recibir') ? <button className="secondary-button" disabled={!['APROBADA', 'PARCIAL'].includes(order.estado)} onClick={() => setPendingReceipt(order)}>Recibir</button> : null}
                     </td>
                   </tr>
                 ))}

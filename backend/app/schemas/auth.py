@@ -98,10 +98,21 @@ class UsuarioUpdate(BaseModel):
     sucursal_id: Optional[str] = None
     esta_activo: Optional[bool] = None
 
+class RolResumen(BaseModel):
+    """Resumen del rol asignado al usuario (para RBAC en el frontend)"""
+    id: UUID
+    nombre: str
+    nivel_acceso: int = 1
+    permisos: list[str] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UsuarioResponse(UsuarioBase):
     """Respuesta de usuario"""
     id: UUID
     rol_id: UUID
+    rol: Optional[RolResumen] = None
     sucursal_id: Optional[UUID] = None
     empresa_id: UUID
     esta_activo: bool = True

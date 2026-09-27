@@ -8,6 +8,8 @@ import { Pagination } from '../../components/Pagination';
 import { SectionPanel } from '../../components/SectionPanel';
 import { StatusBadge } from '../../components/StatusBadge';
 import { catalogService, labService, salesService } from '../../services';
+import { useAuth } from '../auth/authContext';
+import { hasPermission } from '../../lib/permissions';
 import type { ControlCalidadPayload } from '../../types/lab';
 import { dateTime } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
@@ -33,6 +35,7 @@ function toIso(value: string) {
 }
 
 export function LabPage() {
+  const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [selectedOrderId, setSelectedOrderId] = useState('');
   const [saleId, setSaleId] = useState('');
@@ -123,7 +126,7 @@ export function LabPage() {
             <label>Folio<input required value={folio} onChange={(event) => setFolio(event.target.value)} /></label>
             <div className="form-row"><label>Prioridad<select value={prioridad} onChange={(event) => setPrioridad(event.target.value)}><option>NORMAL</option><option>ALTA</option><option>URGENTE</option></select></label><label>Prometida<input type="datetime-local" value={fechaPrometida} onChange={(event) => setFechaPrometida(event.target.value)} /></label></div>
             <label>Observaciones<textarea value={createNotes} onChange={(event) => setCreateNotes(event.target.value)} /></label>
-            <button type="submit" disabled={saving === 'crear'}>{saving === 'crear' ? 'Creando…' : 'Crear orden'}</button>
+            {hasPermission(user, 'laboratorio.ordenes.crear') ? <button type="submit" disabled={saving === 'crear'}>{saving === 'crear' ? 'Creando…' : 'Crear orden'}</button> : null}
           </form>
         </SectionPanel>
       </div>
@@ -132,9 +135,9 @@ export function LabPage() {
         {selectedOrder ? <div className="lab-detail-grid">
           <div className="status-timeline">{selectedOrder.etapas?.map((stage) => <div key={stage.id} className={`timeline-step ${stage.estado.toLowerCase()}`}><strong>{stage.etapa}</strong><span>{stage.estado}</span><small>{stage.fecha_inicio ? `Inicio: ${dateTime(stage.fecha_inicio)}` : 'Pendiente'}</small><small>{stage.fecha_fin ? `Fin: ${dateTime(stage.fecha_fin)}` : stage.observaciones ?? ''}</small></div>)}</div>
           <div className="action-panel">
-            <button className="secondary" disabled={selectedOrder.estado !== 'PENDIENTE' || saving === 'iniciar'} onClick={() => void withOperation('iniciar', () => labService.start(selectedOrder.id))}>Iniciar orden</button>
-            <button className="secondary" disabled={!activeStage || saving === 'etapa'} onClick={() => void withOperation('etapa', () => labService.completeStage(selectedOrder.id, activeStage?.id ?? '', stageNotes || null))}>Completar etapa activa</button>
-            <button className="secondary" disabled={selectedOrder.estado !== 'LISTA_ENTREGA' || saving === 'entregar'} onClick={() => void withOperation('entregar', () => labService.deliver(selectedOrder.id))}>Entregar orden</button>
+            {hasPermission(user, 'laboratorio.ordenes.procesar') ? <button className="secondary" disabled={selectedOrder.estado !== 'PENDIENTE' || saving === 'iniciar'} onClick={() => void withOperation('iniciar', () => labService.start(selectedOrder.id))}>Iniciar orden</button> : null}
+            {hasPermission(user, 'laboratorio.etapas.completar') ? <button className="secondary" disabled={!activeStage || saving === 'etapa'} onClick={() => void withOperation('etapa', () => labService.completeStage(selectedOrder.id, activeStage?.id ?? '', stageNotes || null))}>Completar etapa activa</button> : null}
+            {hasPermission(user, 'laboratorio.ordenes.entregar') ? <button className="secondary" disabled={selectedOrder.estado !== 'LISTA_ENTREGA' || saving === 'entregar'} onClick={() => void withOperation('entregar', () => labService.deliver(selectedOrder.id))}>Entregar orden</button> : null}
             <label>Notas de etapa<textarea value={stageNotes} onChange={(event) => setStageNotes(event.target.value)} /></label>
           </div>
         </div> : <p className="muted">Selecciona una orden para visualizar etapas y acciones.</p>}
@@ -146,7 +149,7 @@ export function LabPage() {
             <label>Producto<select value={productId} onChange={(event) => setProductId(event.target.value)}><option value="">Selecciona producto</option>{productItems.map((product) => <option key={product.id} value={product.id}>{product.sku} · {product.nombre}</option>)}</select></label>
             <label>Cantidad<input type="number" min="0.01" step="0.01" value={quantity} onChange={(event) => setQuantity(event.target.value)} /></label>
             <label>Observaciones<textarea value={consumptionNotes} onChange={(event) => setConsumptionNotes(event.target.value)} /></label>
-            <button type="submit" disabled={!selectedOrder || selectedOrder.estado !== 'EN_PROCESO' || saving === 'consumo'}>{saving === 'consumo' ? 'Registrando…' : 'Registrar consumo'}</button>
+            {hasPermission(user, 'laboratorio.consumos.registrar') ? <button type="submit" disabled={!selectedOrder || selectedOrder.estado !== 'EN_PROCESO' || saving === 'consumo'}>{saving === 'consumo' ? 'Registrando…' : 'Registrar consumo'}</button> : null}
           </form>
         </SectionPanel>
 
@@ -155,7 +158,7 @@ export function LabPage() {
             <label>Resultado<select value={qcResult} onChange={(event) => setQcResult(event.target.value as ControlCalidadPayload['resultado'])}>{QC_RESULTS.map((result) => <option key={result}>{result}</option>)}</select></label>
             <label>Motivo rechazo/retrabajo<input value={qcReason} onChange={(event) => setQcReason(event.target.value)} /></label>
             <label>Observaciones<textarea value={qcNotes} onChange={(event) => setQcNotes(event.target.value)} /></label>
-            <button type="submit" disabled={!selectedOrder || !['CONTROL_CALIDAD', 'EN_PROCESO'].includes(selectedOrder.estado) || saving === 'calidad'}>{saving === 'calidad' ? 'Registrando…' : 'Registrar calidad'}</button>
+            {hasPermission(user, 'laboratorio.control_calidad.registrar') ? <button type="submit" disabled={!selectedOrder || !['CONTROL_CALIDAD', 'EN_PROCESO'].includes(selectedOrder.estado) || saving === 'calidad'}>{saving === 'calidad' ? 'Registrando…' : 'Registrar calidad'}</button> : null}
           </form>
         </SectionPanel>
       </div>

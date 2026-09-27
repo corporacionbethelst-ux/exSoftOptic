@@ -18,7 +18,7 @@ export function Topbar({ user, onMenuClick, onLogout }: TopbarProps) {
   return (
     <header className="topbar">
       <button className="icon-button mobile-only" onClick={onMenuClick}><Menu size={20} /></button>
-      <div><strong>{user?.nombre_completo}</strong><span>{user?.email}</span></div>
+      <div><strong>{user?.nombre_completo}</strong><span>{user?.email}{user?.rol?.nombre ? ` · ${user.rol.nombre}` : ''}</span></div>
       <button className="secondary-button" onClick={() => void handleLogout()}><LogOut size={16} /> Salir</button>
     </header>
   );
