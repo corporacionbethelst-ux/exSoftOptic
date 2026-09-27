@@ -1,6 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from '../features/auth/LoginPage';
-import { RequireAuth } from './RequireAuth';
+import { RequireAuth, RequireModule } from './RequireAuth';
 import { AdminPage } from '../features/admin/AdminPage';
 import { BillingPage } from '../features/billing/BillingPage';
 import { CrmPage } from '../features/crm/CrmPage';
@@ -29,23 +29,23 @@ export const router = createBrowserRouter([
     element: <RequireAuth />,
     children: [
       { index: true, element: <DashboardPage /> },
-      { path: 'dashboard', element: <DashboardPage /> },
-      { path: 'users', element: <UsersPage /> },
-      { path: 'products', element: <ProductsPage /> },
-      { path: 'inventory', element: <InventoryPage /> },
-      { path: 'sales', element: <SalesPage /> },
-      { path: 'sales/:saleId', element: <SaleDetailPage /> },
-      { path: 'purchases', element: <PurchasesPage /> },
-      { path: 'crm', element: <CrmPage /> },
-      { path: 'patients', element: <PatientsPage /> },
-      { path: 'patients/:patientId', element: <PatientDetailPage /> },
-      { path: 'lab', element: <LabPage /> },
-      { path: 'lab/:orderId', element: <LabOrderDetailPage /> },
-      { path: 'finance', element: <FinancePage /> },
-      { path: 'billing', element: <BillingPage /> },
-      { path: 'reports', element: <ReportsPage /> },
-      { path: 'operations', element: <OperationsPage /> },
-      { path: 'admin', element: <AdminPage /> },
+      { path: 'dashboard', element: <RequireModule module="dashboard"><DashboardPage /></RequireModule> },
+      { path: 'users', element: <RequireModule module="users"><UsersPage /></RequireModule> },
+      { path: 'products', element: <RequireModule module="products"><ProductsPage /></RequireModule> },
+      { path: 'inventory', element: <RequireModule module="inventory"><InventoryPage /></RequireModule> },
+      { path: 'sales', element: <RequireModule module="sales"><SalesPage /></RequireModule> },
+      { path: 'sales/:saleId', element: <RequireModule module="sales"><SaleDetailPage /></RequireModule> },
+      { path: 'purchases', element: <RequireModule module="purchases"><PurchasesPage /></RequireModule> },
+      { path: 'crm', element: <RequireModule module="crm"><CrmPage /></RequireModule> },
+      { path: 'patients', element: <RequireModule module="patients"><PatientsPage /></RequireModule> },
+      { path: 'patients/:patientId', element: <RequireModule module="patients"><PatientDetailPage /></RequireModule> },
+      { path: 'lab', element: <RequireModule module="lab"><LabPage /></RequireModule> },
+      { path: 'lab/:orderId', element: <RequireModule module="lab"><LabOrderDetailPage /></RequireModule> },
+      { path: 'finance', element: <RequireModule module="finance"><FinancePage /></RequireModule> },
+      { path: 'billing', element: <RequireModule module="billing"><BillingPage /></RequireModule> },
+      { path: 'reports', element: <RequireModule module="reports"><ReportsPage /></RequireModule> },
+      { path: 'operations', element: <RequireModule module="operations"><OperationsPage /></RequireModule> },
+      { path: 'admin', element: <RequireModule module="admin"><AdminPage /></RequireModule> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
