@@ -9,6 +9,7 @@ import { crmService } from '../../services';
 import type { CitaEstado, CitaOpticaPayload, RecordatorioClientePayload } from '../../types/crm';
 import { useApiResource } from '../../hooks/useApiResource';
 import { useAuth } from '../auth/authContext';
+import { hasPermission } from '../../lib/permissions';
 
 const APPOINTMENT_STATES: CitaEstado[] = ['PROGRAMADA', 'CONFIRMADA', 'EN_PROCESO', 'COMPLETADA', 'CANCELADA', 'NO_ASISTIO'];
 
@@ -194,7 +195,7 @@ export function CrmPage() {
             <label>Fin<input type="datetime-local" value={fechaFin} onChange={(event) => setFechaFin(event.target.value)} required /></label>
             <label className="wide-field">Motivo<input value={motivo} onChange={(event) => setMotivo(event.target.value)} /></label>
             <label className="wide-field">Observaciones<textarea value={observaciones} onChange={(event) => setObservaciones(event.target.value)} /></label>
-            <div className="form-actions wide-field"><button className="primary-button" disabled={savingAppointment}>{savingAppointment ? 'Guardando…' : 'Crear cita'}</button></div>
+            <div className="form-actions wide-field">{hasPermission(user, 'crm.citas.crear') ? <button className="primary-button" disabled={savingAppointment}>{savingAppointment ? 'Guardando…' : 'Crear cita'}</button> : null}</div>
           </form>
         </SectionPanel>
 
@@ -220,7 +221,7 @@ export function CrmPage() {
             <label>Canal<input value={reminderChannel} onChange={(event) => setReminderChannel(event.target.value)} required /></label>
             <label>Programado<input type="datetime-local" value={reminderDate} onChange={(event) => setReminderDate(event.target.value)} required /></label>
             <label className="wide-field">Mensaje<textarea value={reminderMessage} onChange={(event) => setReminderMessage(event.target.value)} required /></label>
-            <div className="form-actions wide-field"><button className="secondary-button" disabled={savingReminder}>{savingReminder ? 'Guardando…' : 'Crear recordatorio'}</button></div>
+            <div className="form-actions wide-field">{hasPermission(user, 'crm.recordatorios.crear') ? <button className="secondary-button" disabled={savingReminder}>{savingReminder ? 'Guardando…' : 'Crear recordatorio'}</button> : null}</div>
           </form>
         </SectionPanel>
       </div>

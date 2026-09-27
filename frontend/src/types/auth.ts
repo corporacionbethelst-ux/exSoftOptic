@@ -5,6 +5,13 @@ export type LoginRequest = {
   password: string;
 };
 
+export type RolResumen = {
+  id: ID;
+  nombre: string;
+  nivel_acceso: number;
+  permisos: string[];
+};
+
 export type Usuario = {
   id: ID;
   username: string;
@@ -12,6 +19,8 @@ export type Usuario = {
   nombre_completo: string;
   telefono?: string | null;
   rol_id: ID;
+  /** Rol hidratado por el backend en /auth/me y /auth/login (RBAC en UI). */
+  rol?: RolResumen | null;
   sucursal_id?: ID | null;
   empresa_id: ID;
   esta_activo: boolean;

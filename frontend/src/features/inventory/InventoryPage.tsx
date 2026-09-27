@@ -11,6 +11,7 @@ import type { InventarioEntradaPayload, InventarioSalidaPayload } from '../../ty
 import { money } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
 import { useAuth } from '../auth/authContext';
+import { hasPermission } from '../../lib/permissions';
 
 function movementTone(type: string): 'success' | 'warning' | 'danger' | 'neutral' {
   if (type === 'ENTRADA') return 'success';
@@ -179,7 +180,7 @@ export function InventoryPage() {
             <label>Referencia<input value={entryReference} onChange={(event) => setEntryReference(event.target.value)} /></label>
             <label>Lote<input value={entryBatch} onChange={(event) => setEntryBatch(event.target.value)} /></label>
             {formError ? <div className="alert error wide-field">{formError}</div> : null}
-            <div className="form-actions wide-field"><button className="primary-button" disabled={savingEntry}>{savingEntry ? 'Registrando…' : 'Registrar entrada'}</button></div>
+            <div className="form-actions wide-field">{hasPermission(user, 'inventario.entrada') ? <button className="primary-button" disabled={savingEntry}>{savingEntry ? 'Registrando…' : 'Registrar entrada'}</button> : null}</div>
           </form>
         </SectionPanel>
 
@@ -189,7 +190,7 @@ export function InventoryPage() {
             <label>Producto<select value={exitProductId} onChange={(event) => setExitProductId(event.target.value)} required><option value="">Producto</option>{productItems.map((product) => <option key={product.id} value={product.id}>{product.sku} · {product.nombre}</option>)}</select></label>
             <label>Cantidad<input type="number" min="0.001" step="0.001" value={exitQty} onChange={(event) => setExitQty(Number(event.target.value))} required /></label>
             <label>Referencia<input value={exitReference} onChange={(event) => setExitReference(event.target.value)} /></label>
-            <div className="form-actions wide-field"><button className="danger-button" disabled={savingExit}>{savingExit ? 'Registrando…' : 'Registrar salida'}</button></div>
+            <div className="form-actions wide-field">{hasPermission(user, 'inventario.salida') ? <button className="danger-button" disabled={savingExit}>{savingExit ? 'Registrando…' : 'Registrar salida'}</button> : null}</div>
           </form>
         </SectionPanel>
       </div>

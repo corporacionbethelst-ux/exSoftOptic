@@ -7,6 +7,8 @@ import { Pagination } from '../../components/Pagination';
 import { SectionPanel } from '../../components/SectionPanel';
 import { StatusBadge } from '../../components/StatusBadge';
 import { usersService } from '../../services';
+import { useAuth } from '../auth/authContext';
+import { hasPermission } from '../../lib/permissions';
 import type { Rol, RolPayload, Usuario, UsuarioPayload, UsuarioUpdatePayload } from '../../types/auth';
 import { dateTime } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
@@ -45,6 +47,7 @@ function roleName(roles: Rol[], roleId: string) {
 }
 
 export function UsersPage() {
+  const { user } = useAuth();
   const [searchDraft, setSearchDraft] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -164,7 +167,7 @@ export function UsersPage() {
         eyebrow="Seguridad"
         title="Usuarios y roles"
         description="Fase completa de administración de usuarios: búsqueda, paginación, creación, edición, activación y eliminación lógica."
-        actions={<button className="primary-button" onClick={openCreate}>Nuevo usuario</button>}
+        actions={hasPermission(user, 'usuarios.crear') ? <button className="primary-button" onClick={openCreate}>Nuevo usuario</button> : undefined}
       />
 
       <SectionPanel title="Usuarios" footer={<span className="muted compact">{totalLabel}</span>}>
@@ -177,18 +180,18 @@ export function UsersPage() {
             <table>
               <thead><tr><th>Nombre</th><th>Usuario</th><th>Email</th><th>Rol</th><th>Último acceso</th><th>Estado</th><th>Acciones</th></tr></thead>
               <tbody>
-                {userItems.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.nombre_completo}</td>
-                    <td>{user.username}</td>
-                    <td>{user.email}</td>
-                    <td>{roleName(roleItems, user.rol_id)}</td>
-                    <td>{dateTime(user.ultimo_acceso)}</td>
-                    <td><StatusBadge tone={user.esta_activo ? 'success' : 'danger'}>{user.esta_activo ? 'Activo' : 'Inactivo'}</StatusBadge></td>
+                {userItems.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.nombre_completo}</td>
+                    <td>{row.username}</td>
+                    <td>{row.email}</td>
+                    <td>{roleName(roleItems, row.rol_id)}</td>
+                    <td>{dateTime(row.ultimo_acceso)}</td>
+                    <td><StatusBadge tone={row.esta_activo ? 'success' : 'danger'}>{row.esta_activo ? 'Activo' : 'Inactivo'}</StatusBadge></td>
                     <td className="action-cell">
-                      <button className="secondary-button" onClick={() => openEdit(user)}>Editar</button>
-                      <button className="secondary-button" onClick={() => void toggleActive(user)}>{user.esta_activo ? 'Desactivar' : 'Activar'}</button>
-                      <button className="danger-button" onClick={() => setPendingDelete(user)}>Eliminar</button>
+                      {hasPermission(user, 'usuarios.editar') ? <button className="secondary-button" onClick={() => openEdit(row)}>Editar</button> : null}
+                      {hasPermission(user, 'usuarios.editar') ? <button className="secondary-button" onClick={() => void toggleActive(row)}>{row.esta_activo ? 'Desactivar' : 'Activar'}</button> : null}
+                      {hasPermission(user, 'usuarios.eliminar') ? <button className="danger-button" onClick={() => setPendingDelete(row)}>Eliminar</button> : null}
                     </td>
                   </tr>
                 ))}

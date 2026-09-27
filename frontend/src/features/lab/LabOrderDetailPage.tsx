@@ -7,6 +7,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { labService } from '../../services';
 import { useApiResource } from '../../hooks/useApiResource';
 import { dateTime } from '../../utils/format';
+import type { OrdenLaboratorioEtapa } from '../../types/lab';
 
 const LAB_STAGES = ['RECEPCION', 'ESCUEPLIDO', 'PULIDO', 'TEÑIDO', 'MONTAJE', 'CONTROL_CALIDAD'] as const;
 
@@ -53,7 +54,7 @@ export function LabOrderDetailPage() {
 
             <SectionPanel title="Progreso por etapa" description="Vista estimada según el estado actual de la orden.">
               <div className="status-timeline">
-                {(data.etapas?.length ? data.etapas : LAB_STAGES.map((etapa, index) => ({ id: `est-${etapa}`, etapa, estado: stageStatus(data.estado, index) }))).map((stage) => (
+                {(data.etapas?.length ? data.etapas : LAB_STAGES.map<OrdenLaboratorioEtapa>((etapa, index) => ({ id: `est-${etapa}`, etapa, estado: stageStatus(data.estado, index) }))).map((stage) => (
                   <div key={stage.id} className={`timeline-step ${stage.estado.toLowerCase()}`}>
                     <strong>{stage.etapa}</strong>
                     <span>{stage.estado}</span>

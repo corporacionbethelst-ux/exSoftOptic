@@ -7,6 +7,8 @@ import { Pagination } from '../../components/Pagination';
 import { SectionPanel } from '../../components/SectionPanel';
 import { StatusBadge } from '../../components/StatusBadge';
 import { catalogService } from '../../services';
+import { useAuth } from '../auth/authContext';
+import { hasPermission } from '../../lib/permissions';
 import type { Producto, ProductoPayload } from '../../types/catalog';
 import { money } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
@@ -48,6 +50,7 @@ function productToForm(product: Producto): ProductoPayload {
 }
 
 export function ProductsPage() {
+  const { user } = useAuth();
   const [searchDraft, setSearchDraft] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -134,7 +137,7 @@ export function ProductsPage() {
         eyebrow="Catálogo"
         title="Productos"
         description="Fase completa de catálogo: búsqueda, paginación, creación, edición y eliminación lógica."
-        actions={<button className="primary-button" onClick={openCreate}>Nuevo producto</button>}
+        actions={hasPermission(user, 'productos.crear') ? <button className="primary-button" onClick={openCreate}>Nuevo producto</button> : undefined}
       />
 
       <SectionPanel title="Gestión de catálogo" footer={<span className="muted compact">{totalLabel}</span>}>
@@ -155,7 +158,7 @@ export function ProductsPage() {
                     <td>{money(product.precio_venta)}</td>
                     <td>{product.requiere_receta ? 'Sí' : 'No'}</td>
                     <td className="action-cell">
-                      <button className="secondary-button" onClick={() => openEdit(product)}>Editar</button>
+                      {hasPermission(user, 'productos.editar') ? <button className="secondary-button" onClick={() => openEdit(product)}>Editar</button> : null}
                       <button className="danger-button" onClick={() => setPendingDelete(product)}>Eliminar</button>
                     </td>
                   </tr>

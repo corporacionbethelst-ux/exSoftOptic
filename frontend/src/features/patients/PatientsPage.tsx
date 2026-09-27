@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { FormEvent } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { InlineState } from '../../components/InlineState';
@@ -167,7 +168,7 @@ export function PatientsPage() {
           <InlineState loading={patients.loading} error={patients.error} empty={patientItems.length === 0} emptyTitle="Sin pacientes" emptyDescription="Selecciona o crea un cliente y agrega su paciente.">
             <div className="table-wrap"><table><thead><tr><th>Paciente</th><th>Nacimiento</th><th>Contacto</th></tr></thead><tbody>{patientItems.map((patient) => (
               <tr key={patient.id} className={patient.id === selectedPatientId ? 'selected-row' : undefined} onClick={() => { setSelectedPatientId(patient.id); setSelectedClientId(patient.cliente_id); }}>
-                <td><strong>{patient.nombre}</strong><br /><span className="compact-id">{patient.id}</span></td><td>{patient.fecha_nacimiento ?? '—'}</td><td>{patient.email ?? '—'}<br />{patient.telefono ?? '—'}</td>
+                <td><strong><Link to={`/patients/${patient.id}`} className="row-link">{patient.nombre}</Link></strong><br /><span className="compact-id">{patient.id}</span></td><td>{patient.fecha_nacimiento ?? '—'}</td><td>{patient.email ?? '—'}<br />{patient.telefono ?? '—'}</td>
               </tr>
             ))}</tbody></table></div>
           </InlineState>
