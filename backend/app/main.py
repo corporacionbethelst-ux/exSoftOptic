@@ -1,0 +1,126 @@
+from fastapi import FastAPI, Header, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from contextlib import asynccontextmanager
+import logging
+
+from app.core.config import settings
+from app.api.v1.router import api_router
+from sqlalchemy import text
+
+from app.core.database import async_session_maker
+from app.core.error_handlers import register_exception_handlers
+from app.core.request_context import RequestContextMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.metrics import MetricsMiddleware
+from app.core.rate_limit import RateLimitMiddleware
+from app.core.logging_config import configure_logging
+from app.core.metrics import runtime_metrics
+from app.core.observability_auth import metrics_token_is_valid
+
+# Configurar logging estructurado antes de inicializar la aplicación.
+configure_logging(level=settings.LOG_LEVEL, log_format=settings.LOG_FORMAT)
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifecycle events"""
+    # Startup
+    logger.info("🚀 Iniciando Sistema Óptica...")
+    logger.info(f"📊 Ambiente: {settings.ENVIRONMENT}")
+    logger.info(f"🔧 Debug: {settings.DEBUG}")
+    yield
+    # Shutdown
+    logger.info("👋 Apagando Sistema Óptica...")
+
+# Crear aplicación FastAPI
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="Sistema Integral de Gestión para Ópticas",
+    docs_url=None,  # Deshabilitar docs por defecto
+    redoc_url=None,
+    lifespan=lifespan,
+)
+
+# Request context, observabilidad y defensas HTTP
+app.add_middleware(RequestContextMiddleware)
+app.add_middleware(MetricsMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
+
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Registrar handlers de error estándar
+register_exception_handlers(app)
+
+# Incluir routers
+app.include_router(api_router, prefix="/api/v1")
+
+# Documentación personalizada
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{settings.APP_NAME} - Documentación API",
+    )
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=f"{settings.APP_NAME} - ReDoc",
+    )
+
+# Health check
+@app.get("/health", tags=["Health"])
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "environment": settings.ENVIRONMENT,
+        "release_sha": settings.RELEASE_SHA,
+        "deployed_at": settings.DEPLOYED_AT,
+    }
+
+@app.get("/ready", tags=["Health"])
+async def readiness_check():
+    try:
+        async with async_session_maker() as session:
+            await session.execute(text("SELECT 1"))
+    except Exception as exc:
+        logger.exception("Readiness check failed", exc_info=exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Base de datos no disponible",
+        ) from exc
+    return {"status": "ready", "database": "reachable"}
+
+
+@app.get("/metrics", include_in_schema=False)
+async def prometheus_metrics(authorization: str | None = Header(default=None)):
+    """Prometheus scrape endpoint protected with a dedicated static bearer token."""
+    if not metrics_token_is_valid(authorization, settings.METRICS_TOKEN):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado")
+    return Response(
+        content=runtime_metrics.prometheus_text(),
+        media_type="text/plain; version=0.0.4",
+    )
+
+# Root
+@app.get("/", tags=["Root"])
+async def root():
+    return {
+        "message": f"Bienvenido a {settings.APP_NAME}",
+        "version": settings.APP_VERSION,
+        "docs": "/docs",
+        "redoc": "/redoc"
+    }
