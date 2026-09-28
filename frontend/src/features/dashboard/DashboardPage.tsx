@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Boxes, FlaskConical, ShoppingCart, TimerReset } from 'lucide-react';
 import { AlertList, type AlertEntry } from '../../components/AlertList';
 import { InlineState } from '../../components/InlineState';
@@ -23,13 +23,13 @@ const WEEK_DAYS = 7;
 const LAB_STAGES = ['BLOQUEO', 'TALLADO', 'PULIDO', 'TRATAMIENTO', 'MONTAJE', 'CONTROL_CALIDAD'] as const;
 const LAB_ACTIVE_STATES = ['PENDIENTE', 'EN_PROCESO'];
 
-function daysSince(dateStr?: string | null) {
+function daysSince(dateStr: string | null | undefined, nowMs: number) {
   if (!dateStr) return Number.POSITIVE_INFINITY;
-  return (Date.now() - new Date(dateStr).getTime()) / 86_400_000;
+  return (nowMs - new Date(dateStr).getTime()) / 86_400_000;
 }
 
-function startOfToday() {
-  const now = new Date();
+function startOfToday(nowMs: number) {
+  const now = new Date(nowMs);
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 }
 
@@ -56,15 +56,28 @@ function currentStage(order: OrdenLaboratorio): string {
   return pending?.etapa ?? 'CONTROL_CALIDAD';
 }
 
-function rxCategory(receta: RecetaOptica): 'vencida' | 'por_vencer' | 'vigente' {
-  const age = daysSince(receta.fecha);
+function rxCategory(receta: RecetaOptica, nowMs: number): 'vencida' | 'por_vencer' | 'vigente' {
+  const age = daysSince(receta.fecha, nowMs);
   if (age > RX_EXPIRED_DAYS) return 'vencida';
   if (age > RX_WARNING_DAYS) return 'por_vencer';
   return 'vigente';
 }
 
+/** Instante de render del dashboard: se congela una sola vez para que los cálculos
+ *  basados en "ahora" sean puros y deterministas dentro del mismo render. */
+function useRenderTimestamp() {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    // Refresca el reloj cada minuto mientras la vista está montada.
+    const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return nowMs;
+}
+
 export function DashboardPage() {
   const { user } = useAuth();
+  const nowMs = useRenderTimestamp();
 
   const canReadSales = hasAnyPermission(user, ['ventas.leer']);
   const canReadLab = hasAnyPermission(user, ['laboratorio.ordenes.leer']);
@@ -77,16 +90,28 @@ export function DashboardPage() {
   const stockAlerts = useApiResource(useCallback(() => inventoryService.stockAlerts({ limit: 100 }), []), canReadStock);
   const reminders = useApiResource(useCallback(() => crmService.pendingReminders(50), []), canReadRx);
 
-  const saleItems = sales.data ?? [];
-  const labItems = lab.data ?? [];
-  const rxItems = prescriptions.data ?? [];
-  const alertItems = stockAlerts.data ?? [];
+  // Dependencias estables (referencia de `data`, no expresión con ?? por render).
+  const saleItems = sales.data;
+  const labItems = lab.data;
+  const rxItems = prescriptions.data;
+  const alertItems = stockAlerts.data;
 
-  const todayAgg = useMemo(() => aggregateSales(saleItems, startOfToday()), [saleItems]);
-  const weekAgg = useMemo(() => aggregateSales(saleItems, Date.now() - WEEK_DAYS * 86_400_000), [saleItems]);
+  // Vistas normalizadas para el JSX (evitan nuevos arreglos por render).
+  const salesList = useMemo(() => saleItems ?? [], [saleItems]);
+  const labList = useMemo(() => labItems ?? [], [labItems]);
+  const stockList = useMemo(() => alertItems ?? [], [alertItems]);
+
+  const todayAgg = useMemo(
+    () => aggregateSales(saleItems ?? [], startOfToday(nowMs)),
+    [saleItems, nowMs],
+  );
+  const weekAgg = useMemo(
+    () => aggregateSales(saleItems ?? [], nowMs - WEEK_DAYS * 86_400_000),
+    [saleItems, nowMs],
+  );
 
   const activeOrders = useMemo(
-    () => labItems.filter((order) => LAB_ACTIVE_STATES.includes(order.estado)),
+    () => (labItems ?? []).filter((order) => LAB_ACTIVE_STATES.includes(order.estado)),
     [labItems],
   );
 
@@ -103,13 +128,13 @@ export function DashboardPage() {
   const rxStats = useMemo(() => {
     let expiringSoon = 0;
     let expired = 0;
-    for (const receta of rxItems) {
-      const category = rxCategory(receta);
+    for (const receta of rxItems ?? []) {
+      const category = rxCategory(receta, nowMs);
       if (category === 'vencida') expired += 1;
       else if (category === 'por_vencer') expiringSoon += 1;
     }
     return { expiringSoon, expired };
-  }, [rxItems]);
+  }, [rxItems, nowMs]);
 
   // Órdenes activas más recientes con etapa actual (muestra compacta del kanban).
   const recentActiveOrders = useMemo(
@@ -126,7 +151,7 @@ export function DashboardPage() {
   const alerts: AlertEntry[] = useMemo(() => {
     const list: AlertEntry[] = [];
 
-    for (const alert of alertItems.slice(0, 6)) {
+    for (const alert of (alertItems ?? []).slice(0, 6)) {
       const critical = Number(alert.cantidad_actual) <= 0 || alert.severidad === 'CRITICA';
       list.push({
         id: `stock-${alert.producto_id}-${alert.sucursal_id}`,
@@ -137,7 +162,7 @@ export function DashboardPage() {
       });
     }
 
-    for (const receta of rxItems.filter((r) => rxCategory(r) === 'vencida').slice(0, 4)) {
+    for (const receta of (rxItems ?? []).filter((r) => rxCategory(r, nowMs) === 'vencida').slice(0, 4)) {
       list.push({
         id: `rx-expired-${receta.id}`,
         level: 'danger',
@@ -147,17 +172,17 @@ export function DashboardPage() {
       });
     }
 
-    for (const receta of rxItems.filter((r) => rxCategory(r) === 'por_vencer').slice(0, 4)) {
+    for (const receta of (rxItems ?? []).filter((r) => rxCategory(r, nowMs) === 'por_vencer').slice(0, 4)) {
       list.push({
         id: `rx-soon-${receta.id}`,
         level: 'warning',
         title: 'Receta próxima a vencer (<180 días restantes)',
-        description: `Receta con ${Math.round(daysSince(receta.fecha))} días de antigüedad.`,
+        description: `Receta con ${Math.round(daysSince(receta.fecha, nowMs))} días de antigüedad.`,
         meta: dateTime(receta.fecha),
       });
     }
 
-    for (const order of activeOrders.filter((o) => o.fecha_prometida && new Date(o.fecha_prometida).getTime() < Date.now()).slice(0, 4)) {
+    for (const order of activeOrders.filter((o) => o.fecha_prometida && new Date(o.fecha_prometida).getTime() < nowMs).slice(0, 4)) {
       list.push({
         id: `lab-late-${order.id}`,
         level: 'danger',
@@ -167,7 +192,7 @@ export function DashboardPage() {
       });
     }
 
-    for (const reminder of (reminders.data ?? []).filter((r) => new Date(r.programado_para).getTime() < Date.now()).slice(0, 4)) {
+    for (const reminder of (reminders.data ?? []).filter((r) => new Date(r.programado_para).getTime() < nowMs).slice(0, 4)) {
       list.push({
         id: `crm-${reminder.id}`,
         level: 'neutral',
@@ -178,7 +203,7 @@ export function DashboardPage() {
     }
 
     return list;
-  }, [alertItems, rxItems, activeOrders, reminders.data]);
+  }, [alertItems, rxItems, activeOrders, reminders.data, nowMs]);
 
   const criticalCount = alerts.filter((a) => a.level === 'danger').length;
   const warningCount = alerts.filter((a) => a.level === 'warning').length;
@@ -213,7 +238,7 @@ export function DashboardPage() {
           icon={<FlaskConical size={16} />}
           label="Órdenes de lab activas"
           value={lab.loading ? '…' : activeOrders.length}
-          hint={lab.error ?? `${labItems.length} órdenes en ventana reciente`}
+          hint={lab.error ?? `${labList.length} órdenes en ventana reciente`}
           tone={activeOrders.length > 8 ? 'warning' : 'neutral'}
         />
         <MetricCard
@@ -229,9 +254,9 @@ export function DashboardPage() {
         <MetricCard
           icon={<Boxes size={16} />}
           label="Alertas de stock bajo"
-          value={stockAlerts.loading ? '…' : alertItems.length}
+          value={stockAlerts.loading ? '…' : stockList.length}
           hint={stockAlerts.error ?? 'Productos críticos por debajo del mínimo'}
-          tone={alertItems.some((a) => a.severidad === 'CRITICA') ? 'danger' : alertItems.length > 0 ? 'warning' : 'success'}
+          tone={stockList.some((a) => a.severidad === 'CRITICA') ? 'danger' : stockList.length > 0 ? 'warning' : 'success'}
         />
       </div>
 
@@ -273,9 +298,9 @@ export function DashboardPage() {
         </SectionPanel>
 
         <SectionPanel title={<><ShoppingCart size={18} /> Últimas ventas</>} description="Ventas más recientes devueltas por el endpoint paginado.">
-          <InlineState loading={sales.loading} error={sales.error} empty={saleItems.length === 0} emptyTitle="Sin ventas" emptyDescription="Registra una venta clínica para ver actividad aquí.">
+          <InlineState loading={sales.loading} error={sales.error} empty={salesList.length === 0} emptyTitle="Sin ventas" emptyDescription="Registra una venta clínica para ver actividad aquí.">
             <div className="list-stack">
-              {saleItems.slice(0, 6).map((sale) => (
+              {salesList.slice(0, 6).map((sale) => (
                 <div className="row-card" key={sale.id}>
                   <div>
                     <strong>{sale.folio}</strong>
