@@ -1,112 +1,293 @@
-import { Activity, Boxes, FlaskConical, ShoppingCart, Users } from 'lucide-react';
-import { EmptyState } from '../../components/EmptyState';
+import { useCallback, useMemo } from 'react';
+import { AlertTriangle, Boxes, FlaskConical, ShoppingCart, TimerReset } from 'lucide-react';
+import { AlertList, type AlertEntry } from '../../components/AlertList';
 import { InlineState } from '../../components/InlineState';
 import { MetricCard } from '../../components/MetricCard';
 import { PageHeader } from '../../components/PageHeader';
 import { SectionPanel } from '../../components/SectionPanel';
 import { StatusBadge } from '../../components/StatusBadge';
-import { catalogService, inventoryService, labService, salesService, usersService } from '../../services';
-import { money } from '../../utils/format';
 import { useApiResource } from '../../hooks/useApiResource';
+import { crmService, inventoryService, labService, patientsService, salesService } from '../../services';
+import { hasAnyPermission } from '../../lib/permissions';
+import { useAuth } from '../auth/authContext';
+import type { Venta } from '../../types/sales';
+import type { OrdenLaboratorio } from '../../types/lab';
+import type { RecetaOptica } from '../../types/patients';
+import { dateTime, money, number } from '../../utils/format';
+
+/** Vigencia estándar de receta óptica (criterio clínico: 180 días para "próxima a vencer"). */
+const RX_WARNING_DAYS = 180;
+const RX_EXPIRED_DAYS = 365;
+const WEEK_DAYS = 7;
+
+const LAB_STAGES = ['BLOQUEO', 'TALLADO', 'PULIDO', 'TRATAMIENTO', 'MONTAJE', 'CONTROL_CALIDAD'] as const;
+const LAB_ACTIVE_STATES = ['PENDIENTE', 'EN_PROCESO'];
+
+function daysSince(dateStr?: string | null) {
+  if (!dateStr) return Number.POSITIVE_INFINITY;
+  return (Date.now() - new Date(dateStr).getTime()) / 86_400_000;
+}
+
+function startOfToday() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+}
+
+type SaleAgg = { total: number; count: number };
+
+function aggregateSales(sales: Venta[], sinceMs: number): SaleAgg {
+  let total = 0;
+  let count = 0;
+  for (const sale of sales) {
+    if (sale.estado !== 'CONFIRMADA') continue;
+    const ts = sale.fecha ? new Date(sale.fecha).getTime() : 0;
+    if (ts >= sinceMs) {
+      total += Number(sale.total ?? 0);
+      count += 1;
+    }
+  }
+  return { total, count };
+}
+
+/** Etapa actual (kanban) de una orden activa: primera etapa no COMPLETADA. */
+function currentStage(order: OrdenLaboratorio): string {
+  const stages = order.etapas ?? [];
+  const pending = stages.find((stage) => stage.estado !== 'COMPLETADA');
+  return pending?.etapa ?? 'CONTROL_CALIDAD';
+}
+
+function rxCategory(receta: RecetaOptica): 'vencida' | 'por_vencer' | 'vigente' {
+  const age = daysSince(receta.fecha);
+  if (age > RX_EXPIRED_DAYS) return 'vencida';
+  if (age > RX_WARNING_DAYS) return 'por_vencer';
+  return 'vigente';
+}
 
 export function DashboardPage() {
-  const users = useApiResource(usersService.list);
-  const products = useApiResource(catalogService.products);
-  const sales = useApiResource(salesService.list);
-  const lab = useApiResource(labService.orders);
-  const kardex = useApiResource(inventoryService.kardex);
+  const { user } = useAuth();
 
-  const productItems = products.data?.items ?? products.data?.productos ?? [];
-  const salesItems = sales.data ?? [];
+  const canReadSales = hasAnyPermission(user, ['ventas.leer']);
+  const canReadLab = hasAnyPermission(user, ['laboratorio.ordenes.leer']);
+  const canReadRx = hasAnyPermission(user, ['crm.recetas.leer']);
+  const canReadStock = hasAnyPermission(user, ['inventario.leer']);
+
+  const sales = useApiResource(useCallback(() => salesService.recent(200), []), canReadSales);
+  const lab = useApiResource(useCallback(() => labService.orders({ limit: 200 }), []), canReadLab);
+  const prescriptions = useApiResource(useCallback(() => patientsService.prescriptions({ limit: 200 }), []), canReadRx);
+  const stockAlerts = useApiResource(useCallback(() => inventoryService.stockAlerts({ limit: 100 }), []), canReadStock);
+  const reminders = useApiResource(useCallback(() => crmService.pendingReminders(50), []), canReadRx);
+
+  const saleItems = sales.data ?? [];
   const labItems = lab.data ?? [];
-  const kardexItems = kardex.data ?? [];
-  const userItems = users.data?.users ?? [];
-  const salesTotal = salesItems.reduce((total, sale) => total + Number(sale.total ?? 0), 0);
+  const rxItems = prescriptions.data ?? [];
+  const alertItems = stockAlerts.data ?? [];
+
+  const todayAgg = useMemo(() => aggregateSales(saleItems, startOfToday()), [saleItems]);
+  const weekAgg = useMemo(() => aggregateSales(saleItems, Date.now() - WEEK_DAYS * 86_400_000), [saleItems]);
+
+  const activeOrders = useMemo(
+    () => labItems.filter((order) => LAB_ACTIVE_STATES.includes(order.estado)),
+    [labItems],
+  );
+
+  const kanban = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const stage of LAB_STAGES) counts[stage] = 0;
+    for (const order of activeOrders) {
+      const stage = currentStage(order);
+      counts[stage] = (counts[stage] ?? 0) + 1;
+    }
+    return counts;
+  }, [activeOrders]);
+
+  const rxStats = useMemo(() => {
+    let expiringSoon = 0;
+    let expired = 0;
+    for (const receta of rxItems) {
+      const category = rxCategory(receta);
+      if (category === 'vencida') expired += 1;
+      else if (category === 'por_vencer') expiringSoon += 1;
+    }
+    return { expiringSoon, expired };
+  }, [rxItems]);
+
+  // Órdenes activas más recientes con etapa actual (muestra compacta del kanban).
+  const recentActiveOrders = useMemo(
+    () =>
+      activeOrders
+        .filter((order) => order.fecha_prometida)
+        .sort((a, b) => new Date(a.fecha_prometida ?? 0).getTime() - new Date(b.fecha_prometida ?? 0).getTime())
+        .slice(0, 6)
+        .concat(activeOrders.filter((order) => !order.fecha_prometida).slice(0, 6))
+        .slice(0, 6),
+    [activeOrders],
+  );
+
+  const alerts: AlertEntry[] = useMemo(() => {
+    const list: AlertEntry[] = [];
+
+    for (const alert of alertItems.slice(0, 6)) {
+      const critical = Number(alert.cantidad_actual) <= 0 || alert.severidad === 'CRITICA';
+      list.push({
+        id: `stock-${alert.producto_id}-${alert.sucursal_id}`,
+        level: critical ? 'danger' : 'warning',
+        title: `${alert.nombre} (${alert.sku})`,
+        description: alert.mensaje,
+        meta: `Stock actual: ${number(alert.cantidad_actual)} · Mínimo: ${number(alert.stock_minimo)}`,
+      });
+    }
+
+    for (const receta of rxItems.filter((r) => rxCategory(r) === 'vencida').slice(0, 4)) {
+      list.push({
+        id: `rx-expired-${receta.id}`,
+        level: 'danger',
+        title: 'Receta vencida (+365 días)',
+        description: `Paciente registrado el ${receta.fecha}. Requiere reevaluación antes de surtir.`,
+        meta: dateTime(receta.fecha),
+      });
+    }
+
+    for (const receta of rxItems.filter((r) => rxCategory(r) === 'por_vencer').slice(0, 4)) {
+      list.push({
+        id: `rx-soon-${receta.id}`,
+        level: 'warning',
+        title: 'Receta próxima a vencer (<180 días restantes)',
+        description: `Receta con ${Math.round(daysSince(receta.fecha))} días de antigüedad.`,
+        meta: dateTime(receta.fecha),
+      });
+    }
+
+    for (const order of activeOrders.filter((o) => o.fecha_prometida && new Date(o.fecha_prometida).getTime() < Date.now()).slice(0, 4)) {
+      list.push({
+        id: `lab-late-${order.id}`,
+        level: 'danger',
+        title: `Orden ${order.folio} retrasada`,
+        description: `Entrega prometida: ${dateTime(order.fecha_prometida)}. Etapa actual: ${currentStage(order)}.`,
+        meta: `Prioridad ${order.prioridad}`,
+      });
+    }
+
+    for (const reminder of (reminders.data ?? []).filter((r) => new Date(r.programado_para).getTime() < Date.now()).slice(0, 4)) {
+      list.push({
+        id: `crm-${reminder.id}`,
+        level: 'neutral',
+        title: `Recordatorio ${reminder.tipo}`,
+        description: reminder.mensaje,
+        meta: dateTime(reminder.programado_para),
+      });
+    }
+
+    return list;
+  }, [alertItems, rxItems, activeOrders, reminders.data]);
+
+  const criticalCount = alerts.filter((a) => a.level === 'danger').length;
+  const warningCount = alerts.filter((a) => a.level === 'warning').length;
 
   return (
     <section className="page-stack">
       <PageHeader
         eyebrow="Inicio"
-        title="Dashboard operativo"
-        description="Resumen conectado a los endpoints del backend y al seed demo. Cada panel se carga de forma independiente."
-        actions={<StatusBadge tone="success">Backend conectado</StatusBadge>}
+        title="Dashboard analítico óptico"
+        description="KPIs calculados desde los endpoints existentes (ventas, laboratorio, recetas e inventario) mediante agregación en cliente con paginación eficiente."
+        actions={<StatusBadge tone={criticalCount > 0 ? 'danger' : warningCount > 0 ? 'warning' : 'success'}>
+          {criticalCount > 0 ? `${criticalCount} alertas críticas` : warningCount > 0 ? `${warningCount} alertas de atención` : 'Operación normal'}
+        </StatusBadge>}
       />
 
       <div className="metric-grid">
-        <MetricCard label="Usuarios" value={users.loading ? '…' : users.data?.total ?? 0} hint={users.error ?? 'Equipo activo'} />
-        <MetricCard label="Productos" value={products.loading ? '…' : productItems.length} hint={products.error ?? 'Catálogo demo'} />
-        <MetricCard label="Ventas" value={sales.loading ? '…' : salesItems.length} hint={sales.error ?? money(salesTotal)} />
-        <MetricCard label="Órdenes Lab" value={lab.loading ? '…' : labItems.length} hint={lab.error ?? 'En proceso'} />
+        <MetricCard
+          icon={<ShoppingCart size={16} />}
+          label="Ventas del día"
+          value={sales.loading ? '…' : money(todayAgg.total)}
+          hint={sales.error ?? (todayAgg.count > 0 ? `${todayAgg.count} tickets · promedio ${money(todayAgg.total / todayAgg.count)}` : 'Sin ventas confirmadas hoy')}
+          tone={todayAgg.count > 0 ? 'success' : 'neutral'}
+        />
+        <MetricCard
+          icon={<TimerReset size={16} />}
+          label="Ventas de la semana"
+          value={sales.loading ? '…' : money(weekAgg.total)}
+          hint={sales.error ?? (weekAgg.count > 0 ? `Ticket promedio ${money(weekAgg.total / weekAgg.count)}` : 'Últimos 7 días sin ventas')}
+          tone={weekAgg.count > 0 ? 'success' : 'neutral'}
+        />
+        <MetricCard
+          icon={<FlaskConical size={16} />}
+          label="Órdenes de lab activas"
+          value={lab.loading ? '…' : activeOrders.length}
+          hint={lab.error ?? `${labItems.length} órdenes en ventana reciente`}
+          tone={activeOrders.length > 8 ? 'warning' : 'neutral'}
+        />
+        <MetricCard
+          icon={<AlertTriangle size={16} />}
+          label="Recetas por vencer / vencidas"
+          value={prescriptions.loading ? '…' : `${rxStats.expiringSoon} / ${rxStats.expired}`}
+          hint={prescriptions.error ?? `Vigencia clínica: ${RX_WARNING_DAYS}–${RX_EXPIRED_DAYS} días`}
+          tone={rxStats.expired > 0 ? 'danger' : rxStats.expiringSoon > 0 ? 'warning' : 'success'}
+        />
       </div>
 
+      <div className="metric-grid">
+        <MetricCard
+          icon={<Boxes size={16} />}
+          label="Alertas de stock bajo"
+          value={stockAlerts.loading ? '…' : alertItems.length}
+          hint={stockAlerts.error ?? 'Productos críticos por debajo del mínimo'}
+          tone={alertItems.some((a) => a.severidad === 'CRITICA') ? 'danger' : alertItems.length > 0 ? 'warning' : 'success'}
+        />
+      </div>
+
+      <SectionPanel title={<><FlaskConical size={18} /> Órdenes de laboratorio por etapa (kanban)</>} description="Órdenes activas (PENDIENTE / EN_PROCESO) agrupadas por su etapa actual.">
+        <InlineState loading={lab.loading} error={lab.error} empty={activeOrders.length === 0} emptyTitle="Sin órdenes activas" emptyDescription="No hay órdenes de laboratorio en proceso en la ventana reciente.">
+          <div className="kanban-strip">
+            {LAB_STAGES.map((stage) => (
+              <div className={`kanban-cell ${kanban[stage] > 0 ? 'filled' : ''}`} key={stage}>
+                <strong>{kanban[stage]}</strong>
+                <span>{stage.replace('_', ' ')}</span>
+              </div>
+            ))}
+          </div>
+          <div className="list-stack" style={{ marginTop: '1rem' }}>
+            {recentActiveOrders.map((order) => (
+              <div className="row-card" key={order.id}>
+                <div>
+                  <strong>{order.folio}</strong>
+                  <span>{currentStage(order).replace('_', ' ')} · Prioridad {order.prioridad}</span>
+                </div>
+                <b>{order.fecha_prometida ? dateTime(order.fecha_prometida) : 'Sin fecha prometida'}</b>
+              </div>
+            ))}
+          </div>
+        </InlineState>
+      </SectionPanel>
+
       <div className="panel-grid">
-        <SectionPanel title={<><ShoppingCart size={18} /> Últimas ventas</>}>
-          <InlineState loading={sales.loading} error={sales.error} empty={salesItems.length === 0} emptyTitle="Sin ventas" emptyDescription="Ejecuta make seed-demo para poblar ventas demo.">
+        <SectionPanel title={<><AlertTriangle size={18} /> Centro de alertas</>} description="Stock crítico, recetas vencidas/próximas a vencer y órdenes retrasadas.">
+          <InlineState
+            loading={stockAlerts.loading || prescriptions.loading}
+            error={stockAlerts.error ?? prescriptions.error}
+            empty={alerts.length === 0}
+            emptyTitle="Sin alertas activas"
+            emptyDescription="Todo opera dentro de parámetros normales."
+          >
+            <AlertList items={alerts} />
+          </InlineState>
+        </SectionPanel>
+
+        <SectionPanel title={<><ShoppingCart size={18} /> Últimas ventas</>} description="Ventas más recientes devueltas por el endpoint paginado.">
+          <InlineState loading={sales.loading} error={sales.error} empty={saleItems.length === 0} emptyTitle="Sin ventas" emptyDescription="Registra una venta clínica para ver actividad aquí.">
             <div className="list-stack">
-              {salesItems.slice(0, 5).map((sale) => (
+              {saleItems.slice(0, 6).map((sale) => (
                 <div className="row-card" key={sale.id}>
-                  <div><strong>{sale.folio}</strong><span>{sale.estado}</span></div>
+                  <div>
+                    <strong>{sale.folio}</strong>
+                    <span>{dateTime(sale.fecha)}</span>
+                  </div>
                   <b>{money(sale.total)}</b>
                 </div>
               ))}
             </div>
           </InlineState>
         </SectionPanel>
-
-        <SectionPanel title={<><Boxes size={18} /> Productos guía</>}>
-          <InlineState loading={products.loading} error={products.error} empty={productItems.length === 0} emptyTitle="Sin productos" emptyDescription="El catálogo demo todavía no tiene productos visibles.">
-            <div className="list-stack">
-              {productItems.slice(0, 5).map((product) => (
-                <div className="row-card" key={product.id}>
-                  <div><strong>{product.nombre}</strong><span>{product.sku}</span></div>
-                  <b>{money(product.precio_venta)}</b>
-                </div>
-              ))}
-            </div>
-          </InlineState>
-        </SectionPanel>
-
-        <SectionPanel title={<><FlaskConical size={18} /> Laboratorio</>}>
-          <InlineState loading={lab.loading} error={lab.error} empty={labItems.length === 0} emptyTitle="Sin órdenes" emptyDescription="Aún no hay órdenes de laboratorio para mostrar.">
-            <div className="list-stack">
-              {labItems.slice(0, 5).map((order) => (
-                <div className="row-card" key={order.id}>
-                  <div><strong>{order.folio}</strong><span>{order.prioridad}</span></div>
-                  <StatusBadge tone={order.estado === 'EN_PROCESO' ? 'warning' : 'neutral'}>{order.estado}</StatusBadge>
-                </div>
-              ))}
-            </div>
-          </InlineState>
-        </SectionPanel>
-
-        <SectionPanel title={<><Activity size={18} /> Kardex reciente</>}>
-          <InlineState loading={kardex.loading} error={kardex.error} empty={kardexItems.length === 0} emptyTitle="Sin movimientos" emptyDescription="El inventario todavía no tiene kardex reciente.">
-            <div className="list-stack">
-              {kardexItems.slice(0, 5).map((movement) => (
-                <div className="row-card" key={movement.id}>
-                  <div><strong>{movement.tipo_movimiento}</strong><span>{movement.origen}</span></div>
-                  <b>{movement.cantidad}</b>
-                </div>
-              ))}
-            </div>
-          </InlineState>
-        </SectionPanel>
-
-        <SectionPanel className="wide" title={<><Users size={18} /> Usuarios</>}>
-          <InlineState loading={users.loading} error={users.error} empty={userItems.length === 0} emptyTitle="Sin usuarios" emptyDescription="No hay usuarios visibles con los filtros actuales.">
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Usuario</th><th>Email</th><th>Estado</th></tr></thead>
-                <tbody>{userItems.slice(0, 6).map((user) => <tr key={user.id}><td>{user.nombre_completo}</td><td>{user.email}</td><td><StatusBadge tone={user.esta_activo ? 'success' : 'danger'}>{user.esta_activo ? 'Activo' : 'Inactivo'}</StatusBadge></td></tr>)}</tbody>
-              </table>
-            </div>
-          </InlineState>
-        </SectionPanel>
       </div>
-
-      {users.error || products.error || sales.error || lab.error || kardex.error ? (
-        <EmptyState title="Hay paneles con errores" description="El dashboard continúa mostrando la información disponible; revisa el panel específico para ver qué endpoint falló." />
-      ) : null}
     </section>
   );
 }
