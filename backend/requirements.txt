@@ -44,7 +44,7 @@ loguru==0.7.3
 python-dateutil==2.9.0.post0
 
 # PDF Generation
-reportlab==4.3.0
+reportlab==5.0.1
 weasyprint==69.0
 
 # Excel
